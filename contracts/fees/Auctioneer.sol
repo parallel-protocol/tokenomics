@@ -56,6 +56,7 @@ contract Auctioneer is AccessManaged, Pausable {
     //-------------------------------------------
     // Events
     //-------------------------------------------
+
     /// @notice Event emitted when token has been bought for the current epoch.
     /// @param buyer the buyer address.
     /// @param assetsReceiver the receiver of payment token.
@@ -191,8 +192,6 @@ contract Auctioneer is AccessManaged, Pausable {
 
         if (uint16(_epochId) != slot0Cache.epochId) revert EpochIdMismatch();
 
-        address sender = _msgSender();
-
         paymentAmount = getPriceFromCache(slot0Cache);
 
         if (paymentAmount > _maxPaymentTokenAmount) revert MaxPaymentTokenAmountExceeded();
@@ -216,10 +215,10 @@ contract Auctioneer is AccessManaged, Pausable {
         // Write cache in single write
         slot0 = slot0Cache;
 
-        emit Buy(sender, _assetsReceiver, paymentAmount);
+        emit Buy(msg.sender, _assetsReceiver, paymentAmount);
 
         if (paymentAmount > 0) {
-            paymentToken.safeTransferFrom(sender, paymentReceiver, paymentAmount);
+            paymentToken.safeTransferFrom(msg.sender, paymentReceiver, paymentAmount);
         }
 
         uint256 i = 0;

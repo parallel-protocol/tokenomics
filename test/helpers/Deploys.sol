@@ -3,6 +3,8 @@ pragma solidity 0.8.25;
 
 import { Test } from "@forge-std/Test.sol";
 
+import { OptionsBuilder } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/libs/OptionsBuilder.sol";
+
 import { AccessManager, IAccessManaged } from "@openzeppelin/contracts/access/manager/AccessManager.sol";
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { IERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
@@ -10,6 +12,7 @@ import { IERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/IER
 import { Auctioneer } from "contracts/fees/Auctioneer.sol";
 import { MainFeeDistributor } from "contracts/fees/MainFeeDistributor.sol";
 import { SideChainFeeCollector } from "contracts/fees/SideChainFeeCollector.sol";
+import { FeeCollectorCore } from "contracts/fees/SideChainFeeCollector.sol";
 
 import { ERC20Mock } from "test/mocks/ERC20Mock.sol";
 import { ReenteringMockToken } from "test/mocks/ReenteringMockToken.sol";
@@ -109,16 +112,18 @@ abstract contract Deploys is Test {
     }
 
     function _deploySideChainFeeCollector(
-        address _bridgeableToken,
-        uint32 _lzEidReceiver,
         address _accessManager,
+        uint32 _lzEidReceiver,
+        address _bridgeableToken,
+        address _destinationRecipient,
         address _feeToken
     )
         internal
         returns (SideChainFeeCollector)
     {
-        SideChainFeeCollector _sideChainSideChainFeeCollector =
-            new SideChainFeeCollector(_bridgeableToken, _lzEidReceiver, _accessManager, _feeToken);
+        SideChainFeeCollector _sideChainSideChainFeeCollector = new SideChainFeeCollector(
+            _accessManager, _lzEidReceiver, _bridgeableToken, _destinationRecipient, _feeToken
+        );
         vm.label({ account: address(_sideChainSideChainFeeCollector), newLabel: "SideChainFeeCollector" });
         return _sideChainSideChainFeeCollector;
     }

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-import "test/MainChainIntegrations.t.sol";
+import "test/Integrations.t.sol";
 
-contract Auctioneer_UpdatePaymentToken_Integrations_Test is MainChainIntegrations_Test {
+contract Auctioneer_UpdatePaymentToken_Integrations_Test is Integrations_Test {
     address newPaymentToken = makeAddr("newPaymentToken");
 
     function test_Auctioneer_UpdatePaymentToken() public {

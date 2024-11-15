@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-import "test/MainChainIntegrations.t.sol";
+import "test/Integrations.t.sol";
 
-contract Auctioneer_Buy_Integrations_Test is MainChainIntegrations_Test {
+contract Auctioneer_Buy_Integrations_Test is Integrations_Test {
     ERC20Mock secondToken;
     ERC20Mock paymentToken;
     address paymentReceiver;

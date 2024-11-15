@@ -5,23 +5,23 @@ import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 
 import "test/Integrations.t.sol";
 
-contract Auctioneer_UnPause_Integrations_Test is Integrations_Test {
+contract SideChainFeeCollector_UnPause_Integrations_Test is Integrations_Test {
     function setUp() public virtual override {
         super.setUp();
         vm.startPrank(users.admin);
-        auctioneer.pause();
+        sideChainFeeCollector.pause();
     }
 
-    function test_Auctioneer_UnPause() external {
-        vm.expectEmit(address(auctioneer));
+    function test_SideChainFeeCollector_UnPause() external {
+        vm.expectEmit(address(sideChainFeeCollector));
         emit Pausable.Unpaused(users.admin);
-        auctioneer.unpause();
-        assertFalse(auctioneer.paused());
+        sideChainFeeCollector.unpause();
+        assertFalse(sideChainFeeCollector.paused());
     }
 
-    function test_Auctioneer_UnPause_RevertWhen_CallerNotAuthorized() external {
+    function test_SideChainFeeCollector_UnPause_RevertWhen_CallerNotAuthorized() external {
         vm.startPrank(users.hacker);
         vm.expectRevert(abi.encodeWithSelector(IAccessManaged.AccessManagedUnauthorized.selector, users.hacker));
-        auctioneer.unpause();
+        sideChainFeeCollector.unpause();
     }
 }

@@ -27,16 +27,18 @@ contract BridgeableTokenMock is ERC20Mock {
 
     function send(
         SendParam calldata _sendParam,
-        MessagingFee calldata _fee,
-        address _refundAddress
+        MessagingFee calldata,
+        address
     )
         external
         payable
         returns (MessagingReceipt memory, OFTReceipt memory)
     {
-        _refundAddress;
-        _fee;
         principalToken.transferFrom(msg.sender, address(this), _sendParam.amountLD);
         return (MessagingReceipt(bytes32(""), 0, MessagingFee(0, 0)), OFTReceipt(0, 0));
+    }
+
+    function quoteSend(SendParam calldata, bool) external view returns (MessagingFee memory) {
+        return MessagingFee(0, 0);
     }
 }

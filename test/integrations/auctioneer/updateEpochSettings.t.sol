@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-import "test/MainChainIntegrations.t.sol";
+import "test/Integrations.t.sol";
 
-contract Auctioneer_UpdateEpochSettings_Integrations_Test is MainChainIntegrations_Test {
+contract Auctioneer_UpdateEpochSettings_Integrations_Test is Integrations_Test {
     uint256 newEpochDuration = 28 days;
     uint256 newInitPrice = 100e18;
     uint256 newPriceMultiplier = 2.5e18;

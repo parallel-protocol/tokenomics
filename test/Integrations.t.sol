@@ -4,12 +4,16 @@ pragma solidity 0.8.25;
 import "test/Base.t.sol";
 
 /// @notice Common logic for integrations tests on the side chain.
-abstract contract SideChainIntegrations_Test is Base_Test {
+abstract contract Integrations_Test is Base_Test {
     function setUp() public virtual override {
         Base_Test.setUp();
 
-        sideChainFeeCollector =
-            _deploySideChainFeeCollector(address(bridgeableTokenMock), mainEid, address(accessManager), address(par));
+        mainFeeDistributor =
+            _deployMainFeeDistributor(address(accessManager), address(bridgeableTokenMock), address(par));
+
+        sideChainFeeCollector = _deploySideChainFeeCollector(
+            address(accessManager), mainEid, address(bridgeableTokenMock), address(mainFeeDistributor), address(par)
+        );
 
         auctioneer = _deployAuctioneer(
             address(accessManager),

@@ -23,6 +23,13 @@ abstract contract FeeCollectorCore is AccessManaged, Pausable {
     IERC20 public immutable feeToken;
 
     //-------------------------------------------
+    // Errors
+    //-------------------------------------------
+
+    /// @notice Thrown when the amount to release is zero.
+    error NothingToRelease();
+
+    //-------------------------------------------
     // Constructor
     //-------------------------------------------
 
