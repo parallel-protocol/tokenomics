@@ -99,14 +99,14 @@ abstract contract Deploys is Test {
     }
 
     function _deployMainFeeDistributor(
-        address _bridgeableToken,
         address _accessManager,
+        address _bridgeableToken,
         address _feeToken
     )
         internal
         returns (MainFeeDistributor)
     {
-        MainFeeDistributor _mainFeeDistributor = new MainFeeDistributor(_bridgeableToken, _accessManager, _feeToken);
+        MainFeeDistributor _mainFeeDistributor = new MainFeeDistributor(_accessManager, _bridgeableToken, _feeToken);
         vm.label({ account: address(_mainFeeDistributor), newLabel: "MainFeeDistributor" });
         return _mainFeeDistributor;
     }

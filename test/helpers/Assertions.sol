@@ -13,6 +13,8 @@ abstract contract Assertions is Test {
     event LogNamedUint64(string key, uint64 value);
     event LogNamedUint8(string key, uint8 value);
     event LogNamedInt256(string key, int256 value);
+
+    event LogNamedUint256(string key, uint256 value);
     event LogNamedString(string key, string value);
 
     //----------------------------------------
@@ -57,6 +59,18 @@ abstract contract Assertions is Test {
         if (a != b) {
             emit LogNamedString("Error", err);
             assertEqUint8(a, b);
+        }
+    }
+
+    function assertAlmostEqual(uint256 a, uint256 b, uint256 maxDelta) internal {
+        uint256 actualDelta = a > b ? a - b : b - a;
+        if (actualDelta > maxDelta) {
+            emit Log("Error: a ~= b not satisfied [int256]");
+            emit LogNamedUint256("      Expected", b);
+            emit LogNamedUint256("      Right", a);
+            emit LogNamedUint256("     Max Delta", maxDelta);
+            emit LogNamedUint256("  Actual Delta", actualDelta);
+            fail();
         }
     }
 }

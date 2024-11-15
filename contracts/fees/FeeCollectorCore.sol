@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
+import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { AccessManaged } from "@openzeppelin/contracts/access/manager/AccessManaged.sol";
 
@@ -12,7 +13,7 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 /// @custom:contact security@cooperlabs.xyz
 /// @notice Abstract contract that handle the commun logic between SideChainFeeCollector and MainFeeDistributor
 /// contracts.
-abstract contract FeeCollectorCore is AccessManaged, Pausable {
+abstract contract FeeCollectorCore is AccessManaged, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     //-------------------------------------------

@@ -1,17 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-
 import { OptionsBuilder } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/libs/OptionsBuilder.sol";
-
-import { SendParam, OFTReceipt, IOFT } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/interfaces/IOFT.sol";
+import { SendParam, IOFT } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/interfaces/IOFT.sol";
 import { MessagingFee, MessagingReceipt } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/OFTCore.sol";
 import { MessagingReceipt } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OAppSender.sol";
 import { OFTMsgCodec } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/libs/OFTMsgCodec.sol";
 
-import { FeeCollectorCore } from "./FeeCollectorCore.sol";
+import { FeeCollectorCore, SafeERC20, IERC20 } from "./FeeCollectorCore.sol";
 
 /// @title SideChainFeeCollector
 /// @author Cooper Labs
@@ -41,7 +37,7 @@ contract SideChainFeeCollector is FeeCollectorCore {
     //-------------------------------------------
 
     /// @notice Emitted when the fee token is released.
-    event FeeReleased(address caller, uint256 amountSent, uint256 nativeFee);
+    event FeeReleased(address caller, uint256 amountSent);
 
     //-------------------------------------------
     // Constructor
@@ -74,7 +70,7 @@ contract SideChainFeeCollector is FeeCollectorCore {
     /// @notice Release the fee token to the MainFeeDistributor on the receiving chain.
     /// @param _options Options to be passed to the bridgeable token.
     /// @return amountSent The amount of fee token that has been bridged.
-    function release(bytes memory _options) external payable returns (uint256 amountSent) {
+    function release(bytes memory _options) external payable nonReentrant returns (uint256 amountSent) {
         amountSent = _calcBridgeableAmount();
         if (amountSent == 0) {
             revert NothingToRelease();
@@ -88,10 +84,10 @@ contract SideChainFeeCollector is FeeCollectorCore {
             abi.encode(true),
             ""
         );
-        MessagingFee memory fees = bridgeableToken.quoteSend(sendParam, false);
+
         feeToken.approve(address(bridgeableToken), amountSent);
-        emit FeeReleased(msg.sender, amountSent, fees.nativeFee);
-        bridgeableToken.send{ value: fees.nativeFee }(sendParam, fees, payable(msg.sender));
+        emit FeeReleased(msg.sender, amountSent);
+        bridgeableToken.send{ value: msg.value }(sendParam, MessagingFee(msg.value, 0), payable(msg.sender));
     }
 
     //-------------------------------------------

@@ -11,10 +11,14 @@ import {
 
 import { OFTMsgCodec } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/libs/OFTMsgCodec.sol";
 
+import { IBridgeableToken } from "contracts/interfaces/IBridgeableToken.sol";
+
 import { ERC20Mock } from "./ERC20Mock.sol";
 
-contract BridgeableTokenMock is ERC20Mock {
+contract BridgeableTokenMock is ERC20Mock, IBridgeableToken {
     ERC20Mock public principalToken;
+
+    uint256 maxMintableAmount;
 
     constructor(address _principalToken, string memory _name, string memory _symbol) ERC20Mock(_name, _symbol, 18) {
         principalToken = ERC20Mock(_principalToken);
@@ -23,6 +27,14 @@ contract BridgeableTokenMock is ERC20Mock {
     function swapLzTokenToPrincipalToken(uint256 _amount) external {
         _burn(msg.sender, _amount);
         principalToken.mint(msg.sender, _amount);
+    }
+
+    function getMaxMintableAmount() external view returns (uint256) {
+        return maxMintableAmount;
+    }
+
+    function setMaxMintableAmount(uint256 _maxMintableAmount) external {
+        maxMintableAmount = _maxMintableAmount;
     }
 
     function send(
