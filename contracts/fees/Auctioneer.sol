@@ -6,12 +6,15 @@ import { AccessManaged } from "@openzeppelin/contracts/access/manager/AccessMana
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+import { MathsLib } from "contracts/libraries/MathsLib.sol";
+
 /// @title Auctioneer
 /// @author Cooper Labs
 /// @custom:contact security@cooperlabs.xyz
 /// @notice Inspired by FeeFlowController https://github.com/euler-xyz/fee-flow
 contract Auctioneer is AccessManaged, Pausable {
     using SafeERC20 for IERC20;
+    using MathsLib for *;
 
     //-------------------------------------------
     // Storage
@@ -197,7 +200,7 @@ contract Auctioneer is AccessManaged, Pausable {
         if (paymentAmount > _maxPaymentTokenAmount) revert MaxPaymentTokenAmountExceeded();
 
         // Setup new auction
-        uint256 newInitPrice = paymentAmount * priceMultiplier / PRICE_MULTIPLIER_SCALE;
+        uint256 newInitPrice = paymentAmount.mulDivUp(priceMultiplier, PRICE_MULTIPLIER_SCALE);
 
         if (newInitPrice > ABS_MAX_INIT_PRICE) {
             newInitPrice = ABS_MAX_INIT_PRICE;
@@ -229,20 +232,6 @@ contract Auctioneer is AccessManaged, Pausable {
         }
 
         return paymentAmount;
-    }
-
-    /// @dev Retrieves the current price from the cache based on the elapsed time since the start of the epoch.
-    /// @param _slot0Cache The Slot0 struct containing the initial price and start time of the epoch.
-    /// @return price The current price calculated based on the elapsed time and the initial price.
-    /// @notice This function calculates the current price by subtracting a fraction of the initial price based on the
-    /// elapsed time.
-    // If the elapsed time exceeds the epoch duration, the price will be 0.
-    function getPriceFromCache(Slot0 memory _slot0Cache) internal view returns (uint256) {
-        uint256 timePassed = block.timestamp - _slot0Cache.startTime;
-        if (timePassed > epochDuration) {
-            return 0;
-        }
-        return _slot0Cache.initPrice - _slot0Cache.initPrice * timePassed / epochDuration;
     }
 
     /// @dev Calculates the current price
@@ -334,6 +323,20 @@ contract Auctioneer is AccessManaged, Pausable {
     //-------------------------------------------
     // Private/Internal functions
     //-------------------------------------------
+
+    /// @dev Retrieves the current price from the cache based on the elapsed time since the start of the epoch.
+    /// @param _slot0Cache The Slot0 struct containing the initial price and start time of the epoch.
+    /// @return price The current price calculated based on the elapsed time and the initial price.
+    /// @notice This function calculates the current price by subtracting a fraction of the initial price based on the
+    /// elapsed time.
+    // If the elapsed time exceeds the epoch duration, the price will be 0.
+    function getPriceFromCache(Slot0 memory _slot0Cache) internal view returns (uint256) {
+        uint256 timePassed = block.timestamp - _slot0Cache.startTime;
+        if (timePassed > epochDuration) {
+            return 0;
+        }
+        return _slot0Cache.initPrice - _slot0Cache.initPrice.mulDivUp(timePassed, epochDuration);
+    }
 
     /// @notice Assert new epoch settings data are valid
     /// @param _epochDuration The new epoch duration.
