@@ -130,6 +130,10 @@ contract Auctioneer is AccessManaged, Pausable {
         _;
     }
 
+    //-------------------------------------------
+    // Constructor
+    //-------------------------------------------
+
     /// @notice This constructor performs parameter validation and sets the initial values for the contract.
     /// @dev Initializes the FeeFlowController contract with the specified parameters.
     /// @param _accessManager The address of the AccessManager contract.
