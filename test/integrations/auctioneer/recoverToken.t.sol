@@ -11,8 +11,8 @@ contract Auctioneer_RecoverToken_Integrations_Test is Integrations_Test {
         par.mint(address(auctioneer), INITIAL_BALANCE);
     }
 
-    function test_Auctioneer_RecoverToken() public {
-        vm.startPrank(users.admin);
+    function test_Auctioneer_RecoverToken() external {
+        vm.startPrank(users.admin.addr);
 
         auctioneer.recoverToken(address(par), INITIAL_BALANCE, receiver);
 
@@ -20,9 +20,9 @@ contract Auctioneer_RecoverToken_Integrations_Test is Integrations_Test {
         assertEq(par.balanceOf(receiver), INITIAL_BALANCE);
     }
 
-    function test_Auctioneer_RecoverToken_RevertWhen_CallerNotAuthorized() public {
-        vm.startPrank(users.hacker);
-        vm.expectRevert(abi.encodeWithSelector(IAccessManaged.AccessManagedUnauthorized.selector, users.hacker));
-        auctioneer.recoverToken(address(par), INITIAL_BALANCE, users.hacker);
+    function test_Auctioneer_RecoverToken_RevertWhen_CallerNotAuthorized() external {
+        vm.startPrank(users.hacker.addr);
+        vm.expectRevert(abi.encodeWithSelector(IAccessManaged.AccessManagedUnauthorized.selector, users.hacker.addr));
+        auctioneer.recoverToken(address(par), INITIAL_BALANCE, users.hacker.addr);
     }
 }

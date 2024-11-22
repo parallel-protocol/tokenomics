@@ -11,8 +11,8 @@ contract SideChainFeeCollector_RecoverToken_Integrations_Test is Integrations_Te
         par.mint(address(sideChainFeeCollector), INITIAL_BALANCE);
     }
 
-    function test_SideChainFeeCollector_RecoverToken() public {
-        vm.startPrank(users.admin);
+    function test_SideChainFeeCollector_RecoverToken() external {
+        vm.startPrank(users.admin.addr);
 
         sideChainFeeCollector.recoverToken(address(par), INITIAL_BALANCE, receiver);
 
@@ -20,9 +20,9 @@ contract SideChainFeeCollector_RecoverToken_Integrations_Test is Integrations_Te
         assertEq(par.balanceOf(receiver), INITIAL_BALANCE);
     }
 
-    function test_SideChainFeeCollector_RecoverToken_RevertWhen_CallerNotAuthorized() public {
-        vm.startPrank(users.hacker);
-        vm.expectRevert(abi.encodeWithSelector(IAccessManaged.AccessManagedUnauthorized.selector, users.hacker));
-        sideChainFeeCollector.recoverToken(address(par), INITIAL_BALANCE, users.hacker);
+    function test_SideChainFeeCollector_RecoverToken_RevertWhen_CallerNotAuthorized() external {
+        vm.startPrank(users.hacker.addr);
+        vm.expectRevert(abi.encodeWithSelector(IAccessManaged.AccessManagedUnauthorized.selector, users.hacker.addr));
+        sideChainFeeCollector.recoverToken(address(par), INITIAL_BALANCE, users.hacker.addr);
     }
 }

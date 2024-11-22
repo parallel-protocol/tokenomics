@@ -3,6 +3,7 @@ pragma solidity 0.8.25;
 
 import { Test } from "@forge-std/Test.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { TimeLockPenaltyERC20 } from "contracts/sPRL/TimeLockPenaltyERC20.sol";
 
 abstract contract Assertions is Test {
     //----------------------------------------
@@ -24,6 +25,11 @@ abstract contract Assertions is Test {
     /// @dev Compares two {IERC20} values.
     function assertEq(IERC20 a, IERC20 b) internal pure {
         assertEq(address(a), address(b));
+    }
+
+    /// @dev Compares two {TimeLockPenaltyERC20.WITHDRAW_STATUS} enum values.
+    function assertEq(TimeLockPenaltyERC20.WITHDRAW_STATUS a, TimeLockPenaltyERC20.WITHDRAW_STATUS b) internal pure {
+        assertEq(uint8(a), uint8(b));
     }
 
     /// @dev Compares two `uint64` numbers.

@@ -10,7 +10,6 @@ contract Auctioneer_Buy_Integrations_Test is Integrations_Test {
     address assetsReceiver;
     ERC20Mock[] tokens;
 
-    ReenteringMockToken reenterToken;
     address[] reenterAsset;
 
     function setUp() public override {
@@ -24,21 +23,21 @@ contract Auctioneer_Buy_Integrations_Test is Integrations_Test {
         tokens = [paUSD, secondToken];
         _mintTokensToAuctioneer();
 
-        vm.startPrank(users.alice);
+        vm.startPrank(users.alice.addr);
         paymentToken.approve(address(auctioneer), type(uint256).max);
     }
 
-    function test_Auctioneer_Buy_StartOfAuction() public {
+    function test_Auctioneer_Buy_StartOfAuction() external {
         uint256 paymentReceiverBalanceBefore = par.balanceOf(paymentReceiver);
-        uint256 aliceBalanceBefore = par.balanceOf(users.alice);
+        uint256 aliceBalanceBefore = par.balanceOf(users.alice.addr);
 
         uint256 expectedPrice = auctioneer.getPrice();
 
-        vm.startPrank(users.alice);
+        vm.startPrank(users.alice.addr);
         uint256 paymentAmount = auctioneer.buy(_assetsAddresses(), assetsReceiver, 0, expectedPrice);
 
         uint256 paymentReceiverBalanceAfter = par.balanceOf(paymentReceiver);
-        uint256 aliceBalanceAfter = par.balanceOf(users.alice);
+        uint256 aliceBalanceAfter = par.balanceOf(users.alice.addr);
         Auctioneer.Slot0 memory slot0 = auctioneer.getSlot0();
 
         // Assert token balances
@@ -55,19 +54,19 @@ contract Auctioneer_Buy_Integrations_Test is Integrations_Test {
         assertEq(slot0.startTime, block.timestamp);
     }
 
-    function test_Auctioneer_Buy_EndOfAuction() public {
+    function test_Auctioneer_Buy_EndOfAuction() external {
         uint256 paymentReceiverBalanceBefore = par.balanceOf(paymentReceiver);
-        uint256 aliceBalanceBefore = par.balanceOf(users.alice);
+        uint256 aliceBalanceBefore = par.balanceOf(users.alice.addr);
 
         skip(EPOCH_DURATION + 1);
 
         uint256 expectedPrice = auctioneer.getPrice();
 
-        vm.startPrank(users.alice);
+        vm.startPrank(users.alice.addr);
         uint256 paymentAmount = auctioneer.buy(_assetsAddresses(), assetsReceiver, 0, expectedPrice);
 
         uint256 paymentReceiverBalanceAfter = par.balanceOf(paymentReceiver);
-        uint256 aliceBalanceAfter = par.balanceOf(users.alice);
+        uint256 aliceBalanceAfter = par.balanceOf(users.alice.addr);
         Auctioneer.Slot0 memory slot0 = auctioneer.getSlot0();
 
         // Assert token balances
@@ -84,19 +83,19 @@ contract Auctioneer_Buy_Integrations_Test is Integrations_Test {
         assertEq(slot0.startTime, block.timestamp);
     }
 
-    function test_Auctioneer_Buy_MiddleOfAuction() public {
+    function test_Auctioneer_Buy_MiddleOfAuction() external {
         uint256 paymentReceiverBalanceBefore = par.balanceOf(paymentReceiver);
-        uint256 aliceBalanceBefore = par.balanceOf(users.alice);
+        uint256 aliceBalanceBefore = par.balanceOf(users.alice.addr);
 
         skip(EPOCH_DURATION / 2);
 
         uint256 expectedPrice = auctioneer.getPrice();
 
-        vm.startPrank(users.alice);
+        vm.startPrank(users.alice.addr);
         uint256 paymentAmount = auctioneer.buy(_assetsAddresses(), assetsReceiver, 0, expectedPrice);
 
         uint256 paymentReceiverBalanceAfter = par.balanceOf(paymentReceiver);
-        uint256 aliceBalanceAfter = par.balanceOf(users.alice);
+        uint256 aliceBalanceAfter = par.balanceOf(users.alice.addr);
         Auctioneer.Slot0 memory slot0 = auctioneer.getSlot0();
 
         // Assert token balances
@@ -113,21 +112,21 @@ contract Auctioneer_Buy_Integrations_Test is Integrations_Test {
         assertEq(slot0.startTime, block.timestamp);
     }
 
-    function test_Auctioneer_Buy_RevertWhen_EmptyAssetsArray() public {
+    function test_Auctioneer_Buy_RevertWhen_EmptyAssetsArray() external {
         vm.expectRevert(Auctioneer.EmptyAssets.selector);
         auctioneer.buy(new address[](0), assetsReceiver, 0, 1e18);
         // Double check tokens haven't moved
         _assertMintBalances(address(auctioneer));
     }
 
-    function test_Auctioneer_Buy_RevertWhen_WrongEpoch() public {
+    function test_Auctioneer_Buy_RevertWhen_WrongEpoch() external {
         vm.expectRevert(Auctioneer.EpochIdMismatch.selector);
         auctioneer.buy(_assetsAddresses(), assetsReceiver, 1, 1e18);
         // Double check tokens haven't moved
         _assertMintBalances(address(auctioneer));
     }
 
-    function test_Auctioneer_Buy_RevertWhen_PaymentAmountExceedMax() public {
+    function test_Auctioneer_Buy_RevertWhen_PaymentAmountExceedMax() external {
         vm.expectRevert(Auctioneer.MaxPaymentTokenAmountExceeded.selector);
         auctioneer.buy(_assetsAddresses(), assetsReceiver, 0, INIT_PRICE - 1);
         // Double check tokens haven't moved
@@ -139,14 +138,12 @@ contract Auctioneer_Buy_Integrations_Test is Integrations_Test {
     //-------------------------------------------
 
     modifier SetupReentrancyCall() {
-        // Setup reentering token
-        reenterToken = new ReenteringMockToken("ReenteringToken", "RET");
         reenterToken.mint(address(auctioneer), DEFAULT_MINT_AMOUNT);
 
         reenterAsset = [address(reenterToken)];
 
         vm.stopPrank();
-        vm.startPrank(users.hacker);
+        vm.startPrank(users.hacker.addr);
         par.approve(address(auctioneer), INIT_PRICE);
 
         _;
@@ -158,7 +155,7 @@ contract Auctioneer_Buy_Integrations_Test is Integrations_Test {
             abi.encodeWithSelector(auctioneer.buy.selector, _assetsAddresses(), assetsReceiver, INIT_PRICE)
         );
 
-        vm.startPrank(users.hacker);
+        vm.startPrank(users.hacker.addr);
         par.approve(address(auctioneer), INIT_PRICE);
         vm.expectRevert(Auctioneer.Reentrancy.selector);
         auctioneer.buy(reenterAsset, assetsReceiver, 0, INIT_PRICE);
@@ -181,7 +178,7 @@ contract Auctioneer_Buy_Integrations_Test is Integrations_Test {
     //-------------------------------------------
     // Limits tests
     //-------------------------------------------
-    function test_Auctioneer_Buy_InitPriceExceedingABS_MAX_INIT_PRICE() public {
+    function test_Auctioneer_Buy_InitPriceExceedingABS_MAX_INIT_PRICE() external {
         uint256 absMaxInitPrice = auctioneer.ABS_MAX_INIT_PRICE();
 
         // Deploy with auction at max init price
@@ -196,7 +193,7 @@ contract Auctioneer_Buy_Integrations_Test is Integrations_Test {
             absMaxInitPrice
         );
 
-        paymentToken.mint(users.alice, type(uint216).max);
+        paymentToken.mint(users.alice.addr, type(uint216).max);
         paymentToken.approve(address(tempAuctioneer), type(uint256).max);
         // Buy
         tempAuctioneer.buy(_assetsAddresses(), assetsReceiver, 0, type(uint216).max);
@@ -207,8 +204,8 @@ contract Auctioneer_Buy_Integrations_Test is Integrations_Test {
         assertEq(slot0.initPrice, uint216(absMaxInitPrice));
     }
 
-    function test_Auctioneer_Buy_WrapAroundEpochId() public {
-        paymentToken.mint(users.alice, type(uint216).max);
+    function test_Auctioneer_Buy_WrapAroundEpochId() external {
+        paymentToken.mint(users.alice.addr, type(uint216).max);
 
         OverflowableEpochIdAuctioneer tempAuctioneer = new OverflowableEpochIdAuctioneer(
             address(accessManager),
@@ -306,7 +303,7 @@ contract OverflowableEpochIdAuctioneer is Auctioneer {
         )
     { }
 
-    function setEpochId(uint16 epochId) public {
+    function setEpochId(uint16 epochId) external {
         slot0.epochId = epochId;
     }
 }

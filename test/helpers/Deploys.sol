@@ -14,6 +14,8 @@ import { MainFeeDistributor } from "contracts/fees/MainFeeDistributor.sol";
 import { SideChainFeeCollector } from "contracts/fees/SideChainFeeCollector.sol";
 import { FeeCollectorCore } from "contracts/fees/SideChainFeeCollector.sol";
 
+import { TimeLockPenaltyERC20 } from "contracts/sPRL/TimeLockPenaltyERC20.sol";
+
 import { ERC20Mock } from "test/mocks/ERC20Mock.sol";
 import { ReenteringMockToken } from "test/mocks/ReenteringMockToken.sol";
 import { BridgeableTokenMock } from "test/mocks/BridgeableTokenMock.sol";
@@ -23,7 +25,10 @@ abstract contract Deploys is Test {
     SigUtils internal sigUtils;
 
     ERC20Mock internal par;
+    ERC20Mock internal prl;
+    ERC20Mock internal weth;
     ERC20Mock internal paUSD;
+
     BridgeableTokenMock internal bridgeableTokenMock;
 
     Auctioneer internal auctioneer;
@@ -31,6 +36,9 @@ abstract contract Deploys is Test {
     MainFeeDistributor internal mainFeeDistributor;
     SideChainFeeCollector internal sideChainFeeCollector;
     AccessManager internal accessManager;
+
+    TimeLockPenaltyERC20 internal timeLockPenaltyERC20;
+    ReenteringMockToken internal reenterToken;
 
     function _deployAccessManager(address _initialAdmin) internal returns (AccessManager) {
         AccessManager _accessManager = new AccessManager(_initialAdmin);
@@ -56,6 +64,29 @@ abstract contract Deploys is Test {
         ERC20Mock _erc20 = new ERC20Mock(_name, _symbol, _decimals);
         vm.label({ account: address(_erc20), newLabel: _name });
         return _erc20;
+    }
+
+    function _deployTimeLockPenaltyERC20(
+        address _underlying,
+        address _feeRecipient,
+        address _accessManager,
+        uint256 _penaltyPercentage,
+        uint64 _timeLockDuration
+    )
+        internal
+        returns (TimeLockPenaltyERC20)
+    {
+        TimeLockPenaltyERC20 _timeLockPenaltyERC20 = new TimeLockPenaltyERC20(
+            "TimeLockPenaltyERC20",
+            "TLPERC20",
+            _underlying,
+            _feeRecipient,
+            _accessManager,
+            _penaltyPercentage,
+            _timeLockDuration
+        );
+        vm.label({ account: address(_timeLockPenaltyERC20), newLabel: "TimeLockPenaltyERC20" });
+        return _timeLockPenaltyERC20;
     }
 
     function _deployBridgeableTokenMock(

@@ -11,8 +11,8 @@ contract MainFeeDistributor_RecoverToken_Integrations_Test is Integrations_Test 
         par.mint(address(mainFeeDistributor), INITIAL_BALANCE);
     }
 
-    function test_MainFeeDistributor_RecoverToken() public {
-        vm.startPrank(users.admin);
+    function test_MainFeeDistributor_RecoverToken() external {
+        vm.startPrank(users.admin.addr);
 
         mainFeeDistributor.recoverToken(address(par), INITIAL_BALANCE, receiver);
 
@@ -20,9 +20,9 @@ contract MainFeeDistributor_RecoverToken_Integrations_Test is Integrations_Test 
         assertEq(par.balanceOf(receiver), INITIAL_BALANCE);
     }
 
-    function test_MainFeeDistributor_RecoverToken_RevertWhen_CallerNotAuthorized() public {
-        vm.startPrank(users.hacker);
-        vm.expectRevert(abi.encodeWithSelector(IAccessManaged.AccessManagedUnauthorized.selector, users.hacker));
-        mainFeeDistributor.recoverToken(address(par), INITIAL_BALANCE, users.hacker);
+    function test_MainFeeDistributor_RecoverToken_RevertWhen_CallerNotAuthorized() external {
+        vm.startPrank(users.hacker.addr);
+        vm.expectRevert(abi.encodeWithSelector(IAccessManaged.AccessManagedUnauthorized.selector, users.hacker.addr));
+        mainFeeDistributor.recoverToken(address(par), INITIAL_BALANCE, users.hacker.addr);
     }
 }

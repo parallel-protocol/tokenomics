@@ -34,7 +34,7 @@ contract Auctioneer_Constructor_Integrations_Test is Base_Test {
         assertEq(auctioneer.minInitPrice(), MIN_INIT_PRICE);
     }
 
-    function test_Auctioneer_Constructor_RevertWhen_InitStartTimePassed() public {
+    function test_Auctioneer_Constructor_RevertWhen_InitStartTimePassed() external {
         vm.expectRevert(Auctioneer.InitStartTimePassed.selector);
         new Auctioneer(
             address(accessManager),
@@ -48,7 +48,7 @@ contract Auctioneer_Constructor_Integrations_Test is Base_Test {
         );
     }
 
-    function test_Auctioneer_Constructor_RevertWhen_InitPriceBelowMin() public {
+    function test_Auctioneer_Constructor_RevertWhen_InitPriceBelowMin() external {
         vm.expectRevert(Auctioneer.InitPriceBelowMin.selector);
         new Auctioneer(
             address(accessManager),
@@ -62,7 +62,7 @@ contract Auctioneer_Constructor_Integrations_Test is Base_Test {
         );
     }
 
-    function test_Auctioneer_Constructor_RevertWhen_EpochDurationBelowMin() public {
+    function test_Auctioneer_Constructor_RevertWhen_EpochDurationBelowMin() external {
         uint256 minEpochDuration = auctioneer.MIN_EPOCH_DURATION();
         vm.expectRevert(Auctioneer.EpochDurationBelowMin.selector);
         new Auctioneer(
@@ -77,7 +77,7 @@ contract Auctioneer_Constructor_Integrations_Test is Base_Test {
         );
     }
 
-    function test_Auctioneer_Constructor_RevertWhen_EpochDurationExceedsMax() public {
+    function test_Auctioneer_Constructor_RevertWhen_EpochDurationExceedsMax() external {
         uint256 maxEpochDuration = auctioneer.MAX_EPOCH_DURATION();
         vm.expectRevert(Auctioneer.EpochDurationExceedsMax.selector);
         new Auctioneer(
@@ -92,7 +92,7 @@ contract Auctioneer_Constructor_Integrations_Test is Base_Test {
         );
     }
 
-    function test_Auctioneer_Constructor_RevertWhen_PriceMultiplierBelowMin() public {
+    function test_Auctioneer_Constructor_RevertWhen_PriceMultiplierBelowMin() external {
         uint256 minPriceMultiplier = auctioneer.MIN_PRICE_MULTIPLIER();
         vm.expectRevert(Auctioneer.PriceMultiplierBelowMin.selector);
         new Auctioneer(
@@ -107,7 +107,7 @@ contract Auctioneer_Constructor_Integrations_Test is Base_Test {
         );
     }
 
-    function test_Auctioneer_Constructor_RevertWhen_MinInitPriceBelowMin() public {
+    function test_Auctioneer_Constructor_RevertWhen_MinInitPriceBelowMin() external {
         uint256 absMinInitPrice = auctioneer.ABS_MIN_INIT_PRICE();
         vm.expectRevert(Auctioneer.MinInitPriceBelowMin.selector);
         new Auctioneer(
@@ -122,7 +122,7 @@ contract Auctioneer_Constructor_Integrations_Test is Base_Test {
         );
     }
 
-    function test_Auctioneer_Constructor_RevertWhen_MinInitPriceExceedsABSMaxInitPrice() public {
+    function test_Auctioneer_Constructor_RevertWhen_MinInitPriceExceedsABSMaxInitPrice() external {
         // Fails at init price check
         vm.expectRevert(Auctioneer.InitPriceExceedsMax.selector);
         new Auctioneer(
@@ -137,7 +137,7 @@ contract Auctioneer_Constructor_Integrations_Test is Base_Test {
         );
     }
 
-    function test_Auctioneer_Constructor_RevertWhen_PaymentReceiverIsThis() public {
+    function test_Auctioneer_Constructor_RevertWhen_PaymentReceiverIsThis() external {
         address deployer = makeAddr("deployer");
         address expectedAddress = PredictAddress.calc(deployer, 0);
 

@@ -6,11 +6,11 @@ import "test/Integrations.t.sol";
 contract MainFeeDistributor_Release_Integrations_Test is Integrations_Test {
     using OptionsBuilder for bytes;
 
-    function test_MainFeeDistributor_Release1(uint256 feeAmount, uint256[] memory shares) public {
+    function test_MainFeeDistributor_Release1(uint256 feeAmount, uint256[] memory shares) external {
         feeAmount = _bound(feeAmount, 1e18, 1e27);
         address[] memory recipients;
         (recipients, shares) = _boundRecipientsAndShares(shares);
-        vm.startPrank(users.admin);
+        vm.startPrank(users.admin.addr);
         mainFeeDistributor.updateFeeRecipients(recipients, shares);
         par.mint(address(mainFeeDistributor), feeAmount);
         uint256 totalShares = mainFeeDistributor.totalShares();
@@ -23,12 +23,12 @@ contract MainFeeDistributor_Release_Integrations_Test is Integrations_Test {
         }
     }
 
-    function test_MainFeeDistributor_Release_RevertWhen_BalanceIsZero() public {
+    function test_MainFeeDistributor_Release_RevertWhen_BalanceIsZero() external {
         vm.expectRevert(abi.encodeWithSelector(FeeCollectorCore.NothingToRelease.selector));
         mainFeeDistributor.release();
     }
 
-    function test_MainFeeDistributor_Release_RevertWhen_NoFeeRecipients() public {
+    function test_MainFeeDistributor_Release_RevertWhen_NoFeeRecipients() external {
         par.mint(address(mainFeeDistributor), INITIAL_BALANCE);
         vm.expectRevert(abi.encodeWithSelector(MainFeeDistributor.NoFeeRecipients.selector));
         mainFeeDistributor.release();

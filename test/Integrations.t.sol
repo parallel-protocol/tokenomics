@@ -25,5 +25,13 @@ abstract contract Integrations_Test is Base_Test {
             PRICE_MULTIPLIER,
             MIN_INIT_PRICE
         );
+
+        timeLockPenaltyERC20 = _deployTimeLockPenaltyERC20(
+            address(prl),
+            users.daoTreasury.addr,
+            address(accessManager),
+            DEFAULT_PENALTY_PERCENTAGE,
+            DEFAULT_TIME_LOCK_DURATION
+        );
     }
 }

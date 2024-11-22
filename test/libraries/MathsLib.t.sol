@@ -8,7 +8,7 @@ import "contracts/libraries/MathsLib.sol";
 contract MathsLib_Test is Test {
     using MathsLib for uint256;
 
-    function test_MathsLib_MulDivDown(uint256 x, uint256 y, uint256 denominator) public {
+    function test_MathsLib_MulDivDown(uint256 x, uint256 y, uint256 denominator) external {
         // Ignore cases where x * y overflows or denominator is 0.
         unchecked {
             if (denominator == 0 || (x != 0 && (x * y) / x != y)) return;
@@ -17,7 +17,7 @@ contract MathsLib_Test is Test {
         assertEq(MathsLib.mulDivDown(x, y, denominator), (x * y) / denominator);
     }
 
-    function test_MathsLib_MulDivDown_RevertWhen_Overflow(uint256 x, uint256 y, uint256 denominator) public {
+    function test_MathsLib_MulDivDown_RevertWhen_Overflow(uint256 x, uint256 y, uint256 denominator) external {
         denominator = bound(denominator, 1, type(uint256).max);
         // Overflow if
         //     x * y > type(uint256).max
@@ -32,12 +32,12 @@ contract MathsLib_Test is Test {
         MathsLib.mulDivDown(x, y, denominator);
     }
 
-    function test_MathsLib_MulDivDown_RevertWhen_ZeroDenominator(uint256 x, uint256 y) public {
+    function test_MathsLib_MulDivDown_RevertWhen_ZeroDenominator(uint256 x, uint256 y) external {
         vm.expectRevert();
         MathsLib.mulDivDown(x, y, 0);
     }
 
-    function test_MathsLib_MulDivUp(uint256 x, uint256 y, uint256 denominator) public {
+    function test_MathsLib_MulDivUp(uint256 x, uint256 y, uint256 denominator) external {
         denominator = bound(denominator, 1, type(uint256).max - 1);
         y = bound(y, 1, type(uint256).max);
         x = bound(x, 0, (type(uint256).max - denominator - 1) / y);
@@ -45,7 +45,7 @@ contract MathsLib_Test is Test {
         assertEq(MathsLib.mulDivUp(x, y, denominator), x * y == 0 ? 0 : (x * y - 1) / denominator + 1);
     }
 
-    function test_MathsLib_MulDivUp_RevertWhen_Overflow(uint256 x, uint256 y, uint256 denominator) public {
+    function test_MathsLib_MulDivUp_RevertWhen_Overflow(uint256 x, uint256 y, uint256 denominator) external {
         denominator = bound(denominator, 1, type(uint256).max);
         // Overflow if
         //     x * y + denominator - 1 > type(uint256).max
@@ -61,14 +61,14 @@ contract MathsLib_Test is Test {
         MathsLib.mulDivUp(x, y, denominator);
     }
 
-    function test_MathsLib_MulDivUp_RevertWhen_Underverflow(uint256 x, uint256 y) public {
+    function test_MathsLib_MulDivUp_RevertWhen_Underverflow(uint256 x, uint256 y) external {
         vm.assume(x > 0 && y > 0);
 
         vm.expectRevert();
         MathsLib.mulDivUp(x, y, 0);
     }
 
-    function test_MathsLib_MulDivUp_RevertWhen_ZeroDenominator(uint256 x, uint256 y) public {
+    function test_MathsLib_MulDivUp_RevertWhen_ZeroDenominator(uint256 x, uint256 y) external {
         vm.expectRevert();
         MathsLib.mulDivUp(x, y, 0);
     }

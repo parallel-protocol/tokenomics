@@ -11,9 +11,9 @@ contract Auctioneer_UpdateEpochSettings_Integrations_Test is Integrations_Test {
 
     modifier callIsAuthorized(bool authorized) {
         if (authorized) {
-            vm.startPrank(users.admin);
+            vm.startPrank(users.admin.addr);
         } else {
-            vm.startPrank(users.hacker);
+            vm.startPrank(users.hacker.addr);
         }
         _;
     }
@@ -33,7 +33,7 @@ contract Auctioneer_UpdateEpochSettings_Integrations_Test is Integrations_Test {
     }
 
     function test_Auctioneer_UpdateEpochSettings_RevertWhen_CallerNotAuthorized() public callIsAuthorized(false) {
-        vm.expectRevert(abi.encodeWithSelector(IAccessManaged.AccessManagedUnauthorized.selector, users.hacker));
+        vm.expectRevert(abi.encodeWithSelector(IAccessManaged.AccessManagedUnauthorized.selector, users.hacker.addr));
         auctioneer.updateEpochSettings(newEpochDuration, newInitPrice, newPriceMultiplier, newMinInitPrice);
     }
 

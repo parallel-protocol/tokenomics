@@ -18,7 +18,7 @@ contract Auctioneer_GetPrice_Integrations_Test is Integrations_Test {
         maxPriceMultiplier = auctioneer.MAX_PRICE_MULTIPLIER();
     }
 
-    function test_Auctioneer_GetPrice_MAX_INIT_PRICE_And_MAX_EPOCH_DURATION_DoNotOverflowAndReturnZero() public {
+    function test_Auctioneer_GetPrice_MAX_INIT_PRICE_And_MAX_EPOCH_DURATION_DoNotOverflowAndReturnZero() external {
         Auctioneer tempAuctioneer = new Auctioneer(
             address(accessManager),
             address(par),
@@ -56,7 +56,7 @@ contract Auctioneer_GetPrice_Integrations_Test is Integrations_Test {
         assertNotEq(tempAuctioneer.getPrice(), 0);
     }
 
-    function test_Auctioneer_GetPrice_MAX_INIT_PRICE_And_MAX_PRICE_MULTIPLIER_DoNotOverflowNextAuction() public {
+    function test_Auctioneer_GetPrice_MAX_INIT_PRICE_And_MAX_PRICE_MULTIPLIER_DoNotOverflowNextAuction() external {
         Auctioneer tempAuctioneer = new Auctioneer(
             address(accessManager),
             address(par),
@@ -70,14 +70,14 @@ contract Auctioneer_GetPrice_Integrations_Test is Integrations_Test {
 
         address[] memory assets = new address[](1);
         assets[0] = address(paUSD);
-        par.mint(users.alice, absMaxInitPrice);
+        par.mint(users.alice.addr, absMaxInitPrice);
         paUSD.mint(address(tempAuctioneer), INITIAL_BALANCE);
 
-        vm.startPrank(users.alice);
+        vm.startPrank(users.alice.addr);
         par.approve(address(tempAuctioneer), type(uint256).max);
 
         // Purchase will initialize the next auction and increase the price by its multiplier. Doesn't it revert?
-        assert(tempAuctioneer.buy(assets, users.alice, 0, type(uint216).max) == absMaxInitPrice);
+        assert(tempAuctioneer.buy(assets, users.alice.addr, 0, type(uint216).max) == absMaxInitPrice);
         // Its next price should be capped to the maximum init price
         assert(tempAuctioneer.getPrice() == absMaxInitPrice);
     }

@@ -1,17 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
+import { Vm } from "@forge-std/Test.sol";
+
 struct Users {
     // Admin
-    address payable admin;
+    Vm.Wallet admin;
     // DAO treasury.
-    address payable daoTreasury;
+    Vm.Wallet daoTreasury;
     // Insurance fund multisig.
-    address payable insuranceFundMultisig;
+    Vm.Wallet insuranceFundMultisig;
     // Impartial user.
-    address payable alice;
+    Vm.Wallet alice;
     // Impartial user.
-    address payable bob;
+    Vm.Wallet bob;
     // Malicious user.
-    address payable hacker;
+    Vm.Wallet hacker;
 }

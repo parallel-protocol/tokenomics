@@ -2,7 +2,7 @@
 pragma solidity 0.8.25;
 
 import { console2 } from "@forge-std/console2.sol";
-import { Test } from "@forge-std/Test.sol";
+import { Test, Vm } from "@forge-std/Test.sol";
 
 import "./helpers/Deploys.sol";
 import "./helpers/Defaults.sol";
@@ -19,10 +19,15 @@ abstract contract Base_Test is Test, Deploys, Assertions, Defaults, Utils {
         // Roll the blockchain forward to Monday 1 January 2024 12:00:00 GMT.
         skip(1_704_110_400);
 
+        reenterToken = new ReenteringMockToken("ReenteringToken", "RET");
+
         // Deploy PAR token contract.
         par = _deployERC20Mock("PAR", "PAR", 18);
         // Deploy paUSD token contract.
         paUSD = _deployERC20Mock("paUSD", "paUSD", 18);
+        // Deploy PRL token contract.
+        prl = _deployERC20Mock("prl", "PRL", 18);
+
         // Deploy bridgeable token mock contract.
         bridgeableTokenMock = _deployBridgeableTokenMock(address(par));
 
@@ -36,16 +41,17 @@ abstract contract Base_Test is Test, Deploys, Assertions, Defaults, Utils {
             hacker: _createUser("Hacker", true)
         });
 
-        accessManager = _deployAccessManager(users.admin);
+        accessManager = _deployAccessManager(users.admin.addr);
     }
 
     /// @dev Generates a user, labels its address, and funds it with test assets.
-    function _createUser(string memory name, bool setTokenBalance) internal returns (address payable user) {
-        user = payable(makeAddr(name));
-        vm.deal({ account: user, newBalance: INITIAL_BALANCE });
+    function _createUser(string memory name, bool setTokenBalance) internal returns (Vm.Wallet memory user) {
+        user = vm.createWallet(name);
+        vm.deal({ account: user.addr, newBalance: INITIAL_BALANCE });
         if (setTokenBalance) {
-            par.mint(user, INITIAL_BALANCE);
-            paUSD.mint(user, INITIAL_BALANCE);
+            par.mint(user.addr, INITIAL_BALANCE);
+            paUSD.mint(user.addr, INITIAL_BALANCE);
+            prl.mint(user.addr, INITIAL_BALANCE);
         }
     }
 
