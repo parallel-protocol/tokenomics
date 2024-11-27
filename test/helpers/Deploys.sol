@@ -14,6 +14,8 @@ import { MainFeeDistributor } from "contracts/fees/MainFeeDistributor.sol";
 import { SideChainFeeCollector } from "contracts/fees/SideChainFeeCollector.sol";
 import { FeeCollectorCore } from "contracts/fees/FeeCollectorCore.sol";
 
+import { RewardMerkleDistributor } from "contracts/rewardMerkleDistributor/rewardMerkleDistributor.sol";
+
 import { sPRL1 } from "contracts/sPRL/sPRL1.sol";
 import { TimeLockPenaltyERC20 } from "contracts/sPRL/TimeLockPenaltyERC20.sol";
 
@@ -34,6 +36,8 @@ abstract contract Deploys is Test {
     ReenteringMockToken internal reenterToken;
 
     Auctioneer internal auctioneer;
+
+    RewardMerkleDistributor internal rewardMerkleDistributor;
 
     MainFeeDistributor internal mainFeeDistributor;
     SideChainFeeCollector internal sideChainFeeCollector;
@@ -106,6 +110,18 @@ abstract contract Deploys is Test {
             new sPRL1(_underlying, _feeRecipient, _accessManager, _startPenaltyPercentage, _timeLockDuration);
         vm.label({ account: address(_sPRL1), newLabel: "sPRL1" });
         return _sPRL1;
+    }
+
+    function _deployRewardMerkleDistributor(
+        address _accessManager,
+        address _token
+    )
+        internal
+        returns (RewardMerkleDistributor)
+    {
+        RewardMerkleDistributor _rewardMerkleDistributor = new RewardMerkleDistributor(_accessManager, _token);
+        vm.label({ account: address(_rewardMerkleDistributor), newLabel: "RewardMerkleDistributor" });
+        return _rewardMerkleDistributor;
     }
 
     function _deployBridgeableTokenMock(

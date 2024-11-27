@@ -42,5 +42,6 @@ abstract contract Integrations_Test is Base_Test {
             DEFAULT_TIME_LOCK_DURATION
         );
 
+        rewardMerkleDistributor = _deployRewardMerkleDistributor(address(accessManager), address(par));
     }
 }
