@@ -6,7 +6,7 @@ import { ERC20Votes } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20
 import { Nonces } from "@openzeppelin/contracts/utils/Nonces.sol";
 
 contract sPRL1 is TimeLockPenaltyERC20, ERC20Votes {
-    string constant NAME = "Social Escrowed PRL";
+    string constant NAME = "Stake PRL";
     string constant SYMBOL = "sPRL1";
 
     constructor(

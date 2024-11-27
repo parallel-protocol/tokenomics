@@ -33,5 +33,14 @@ abstract contract Integrations_Test is Base_Test {
             DEFAULT_PENALTY_PERCENTAGE,
             DEFAULT_TIME_LOCK_DURATION
         );
+
+        sprl1 = _deploySPRL1(
+            address(prl),
+            users.daoTreasury.addr,
+            address(accessManager),
+            DEFAULT_PENALTY_PERCENTAGE,
+            DEFAULT_TIME_LOCK_DURATION
+        );
+
     }
 }

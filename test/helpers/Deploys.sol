@@ -12,13 +12,15 @@ import { IERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/IER
 import { Auctioneer } from "contracts/fees/Auctioneer.sol";
 import { MainFeeDistributor } from "contracts/fees/MainFeeDistributor.sol";
 import { SideChainFeeCollector } from "contracts/fees/SideChainFeeCollector.sol";
-import { FeeCollectorCore } from "contracts/fees/SideChainFeeCollector.sol";
+import { FeeCollectorCore } from "contracts/fees/FeeCollectorCore.sol";
 
+import { sPRL1 } from "contracts/sPRL/sPRL1.sol";
 import { TimeLockPenaltyERC20 } from "contracts/sPRL/TimeLockPenaltyERC20.sol";
 
 import { ERC20Mock } from "test/mocks/ERC20Mock.sol";
 import { ReenteringMockToken } from "test/mocks/ReenteringMockToken.sol";
 import { BridgeableTokenMock } from "test/mocks/BridgeableTokenMock.sol";
+
 import { SigUtils } from "./SigUtils.sol";
 
 abstract contract Deploys is Test {
@@ -26,10 +28,10 @@ abstract contract Deploys is Test {
 
     ERC20Mock internal par;
     ERC20Mock internal prl;
-    ERC20Mock internal weth;
-    ERC20Mock internal paUSD;
+        ERC20Mock internal paUSD;
 
     BridgeableTokenMock internal bridgeableTokenMock;
+    ReenteringMockToken internal reenterToken;
 
     Auctioneer internal auctioneer;
 
@@ -37,6 +39,7 @@ abstract contract Deploys is Test {
     SideChainFeeCollector internal sideChainFeeCollector;
     AccessManager internal accessManager;
 
+    sPRL1 internal sprl1;
     TimeLockPenaltyERC20 internal timeLockPenaltyERC20;
     ReenteringMockToken internal reenterToken;
 
@@ -87,6 +90,22 @@ abstract contract Deploys is Test {
         );
         vm.label({ account: address(_timeLockPenaltyERC20), newLabel: "TimeLockPenaltyERC20" });
         return _timeLockPenaltyERC20;
+    }
+
+    function _deploySPRL1(
+        address _underlying,
+        address _feeRecipient,
+        address _accessManager,
+        uint256 _startPenaltyPercentage,
+        uint64 _timeLockDuration
+    )
+        internal
+        returns (sPRL1)
+    {
+        sPRL1 _sPRL1 =
+            new sPRL1(_underlying, _feeRecipient, _accessManager, _startPenaltyPercentage, _timeLockDuration);
+        vm.label({ account: address(_sPRL1), newLabel: "sPRL1" });
+        return _sPRL1;
     }
 
     function _deployBridgeableTokenMock(
