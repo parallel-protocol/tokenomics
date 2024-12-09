@@ -4,7 +4,7 @@ pragma solidity 0.8.25;
 import "test/Integrations.t.sol";
 
 contract TimeLockPenaltyERC20_UpdateFeeReceiver_Integrations_Test is Integrations_Test {
-    address public newPaymentReceiver = makeAddr("newPaymentReceiver");
+    address internal newPaymentReceiver = makeAddr("newPaymentReceiver");
 
     function test_TimeLockPenaltyERC20_UpdateFeeReceiver() external {
         vm.startPrank(users.admin.addr);

@@ -6,7 +6,7 @@ import "test/Base.t.sol";
 import { PredictAddress } from "test/helpers/PredictAddress.sol";
 
 contract Auctioneer_Constructor_Integrations_Test is Base_Test {
-    address public paymentReceiver = makeAddr("paymentReceiver");
+    address internal paymentReceiver = makeAddr("paymentReceiver");
 
     function setUp() public override {
         super.setUp();
@@ -22,7 +22,7 @@ contract Auctioneer_Constructor_Integrations_Test is Base_Test {
         );
     }
 
-    function test_Auctioneer_Constructor() public view {
+    function test_Auctioneer_Constructor() external view {
         assertEq(auctioneer.authority(), address(accessManager));
         Auctioneer.Slot0 memory slot0 = auctioneer.getSlot0();
         assertEq(slot0.initPrice, uint128(INIT_PRICE));

@@ -4,7 +4,7 @@ pragma solidity 0.8.25;
 import "test/Integrations.t.sol";
 
 contract MainFeeDistributor_RecoverToken_Integrations_Test is Integrations_Test {
-    address public receiver = makeAddr("receiver");
+    address internal receiver = makeAddr("receiver");
 
     function setUp() public override {
         super.setUp();
