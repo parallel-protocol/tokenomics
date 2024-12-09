@@ -14,7 +14,7 @@ import { MainFeeDistributor } from "contracts/fees/MainFeeDistributor.sol";
 import { SideChainFeeCollector } from "contracts/fees/SideChainFeeCollector.sol";
 import { FeeCollectorCore } from "contracts/fees/FeeCollectorCore.sol";
 
-import { RewardMerkleDistributor } from "contracts/rewardMerkleDistributor/rewardMerkleDistributor.sol";
+import { RewardMerkleDistributor } from "contracts/rewardMerkleDistributor/RewardMerkleDistributor.sol";
 
 import { sPRL1 } from "contracts/sPRL/sPRL1.sol";
 import { TimeLockPenaltyERC20 } from "contracts/sPRL/TimeLockPenaltyERC20.sol";
@@ -30,7 +30,7 @@ abstract contract Deploys is Test {
 
     ERC20Mock internal par;
     ERC20Mock internal prl;
-        ERC20Mock internal paUSD;
+    ERC20Mock internal paUSD;
 
     BridgeableTokenMock internal bridgeableTokenMock;
     ReenteringMockToken internal reenterToken;
@@ -45,7 +45,6 @@ abstract contract Deploys is Test {
 
     sPRL1 internal sprl1;
     TimeLockPenaltyERC20 internal timeLockPenaltyERC20;
-    ReenteringMockToken internal reenterToken;
 
     function _deployAccessManager(address _initialAdmin) internal returns (AccessManager) {
         AccessManager _accessManager = new AccessManager(_initialAdmin);
@@ -114,12 +113,14 @@ abstract contract Deploys is Test {
 
     function _deployRewardMerkleDistributor(
         address _accessManager,
-        address _token
+        address _token,
+        address _expiredRewardsRecipient
     )
         internal
         returns (RewardMerkleDistributor)
     {
-        RewardMerkleDistributor _rewardMerkleDistributor = new RewardMerkleDistributor(_accessManager, _token);
+        RewardMerkleDistributor _rewardMerkleDistributor =
+            new RewardMerkleDistributor(_accessManager, _token, _expiredRewardsRecipient);
         vm.label({ account: address(_rewardMerkleDistributor), newLabel: "RewardMerkleDistributor" });
         return _rewardMerkleDistributor;
     }
