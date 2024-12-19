@@ -17,6 +17,10 @@ interface IAuraRewardPool {
     function rewardToken() external view returns (address);
 }
 
+interface IVirtualBalanceRewardPool {
+    function rewardToken() external view returns (address);
+}
+
 interface IAuraStashToken {
     function baseToken() external view returns (address);
 }

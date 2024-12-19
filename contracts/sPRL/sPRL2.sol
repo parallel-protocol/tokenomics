@@ -7,7 +7,12 @@ import { Address } from "@openzeppelin/contracts/utils/Address.sol";
 
 import { ERC20Votes } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import { IBalancerVault } from "contracts/interfaces/IBalancerV3Vault.sol";
-import { IAuraBoosterLite, IAuraRewardPool, IAuraStashToken } from "contracts/interfaces/IAura.sol";
+import {
+    IAuraBoosterLite,
+    IVirtualBalanceRewardPool,
+    IAuraRewardPool,
+    IAuraStashToken
+} from "contracts/interfaces/IAura.sol";
 import { IWrappedNative } from "contracts/interfaces/IWrappedNative.sol";
 
 contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
@@ -16,7 +21,7 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
     string constant NAME = "Stake 20WETH-80PRL Aura Deposit Vault";
     string constant SYMBOL = "sPRL2";
 
-    uint256 constant AURA_POOL_PID = 19;
+    uint256 public constant AURA_POOL_PID = 19;
 
     //-------------------------------------------
     // Storage
@@ -124,7 +129,7 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
         PRL.transferFrom(msg.sender, address(this), _maxPrlAmount);
         WETH.transferFrom(msg.sender, address(this), _maxWethAmount);
 
-        (amountsIn, bptAmount) = _joinPool(_maxPrlAmount, _maxWethAmount, _exactBptAmount, true);
+        (amountsIn, bptAmount) = _joinPool(_maxPrlAmount, _maxWethAmount, _exactBptAmount, false);
 
         _deposit(bptAmount);
     }
@@ -160,19 +165,19 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
     /// @notice Withdraw PRL and WETH for a single request.
     /// @param _requestId The request ID to withdraw from.
     /// @param _minPrlAmount The minimum amount of PRL to receive.
-    /// @param _minEthAmount The minimum amount of wETH to receive.
+    /// @param _minWethAmount The minimum amount of WETH to receive.
     /// @return prlAmount The amount of PRL received.
-    /// @return wethAmount The amount of wETH received.
+    /// @return wethAmount The amount of WETH received.
     function withdrawPRLAndWeth(
         uint256 _requestId,
         uint256 _minPrlAmount,
-        uint256 _minEthAmount
+        uint256 _minWethAmount
     )
         external
         returns (uint256 prlAmount, uint256 wethAmount)
     {
         (uint256 bptAmount,) = _withdraw(_requestId);
-        (prlAmount, wethAmount) = _exitPool(bptAmount, _minPrlAmount, _minEthAmount);
+        (prlAmount, wethAmount) = _exitPool(bptAmount, _minPrlAmount, _minWethAmount);
 
         PRL.transfer(msg.sender, prlAmount);
         WETH.transfer(msg.sender, wethAmount);
@@ -181,13 +186,13 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
     /// @notice Withdraw PRL and WETH for multiple requests.
     /// @param _requestIds The request IDs to withdraw from.
     /// @param _minPrlAmount The minimum amount of PRL to receive.
-    /// @param _minEthAmount The minimum amount of ETH to receive.
+    /// @param _minWethAmount The minimum amount of WETH to receive.
     /// @return prlAmount The amount of PRL received.
-    /// @return wethAmount The amount of wETH received.
+    /// @return wethAmount The amount of WETH received.
     function withdrawPRLAndWethMultiple(
         uint256[] calldata _requestIds,
         uint256 _minPrlAmount,
-        uint256 _minEthAmount
+        uint256 _minWethAmount
     )
         external
         returns (uint256 prlAmount, uint256 wethAmount)
@@ -198,7 +203,7 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
             totalBptAmount += bptAmount;
         }
 
-        (prlAmount, wethAmount) = _exitPool(totalBptAmount, _minPrlAmount, _minEthAmount);
+        (prlAmount, wethAmount) = _exitPool(totalBptAmount, _minPrlAmount, _minWethAmount);
 
         PRL.transfer(msg.sender, prlAmount);
         WETH.transfer(msg.sender, wethAmount);
@@ -255,6 +260,34 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
         payable(msg.sender).sendValue(ethAmount);
     }
 
+    /// @notice Claim rewards from Aura Pool and transfer them to the fee receiver.
+    function claimRewards() external {
+        AURA_VAULT.getReward();
+        IERC20 mainRewardToken = IERC20(AURA_VAULT.rewardToken());
+        uint256 mainRewardBalance = mainRewardToken.balanceOf(address(this));
+        if (mainRewardBalance > 0) {
+            mainRewardToken.transfer(feeReceiver, mainRewardBalance);
+        }
+
+        address[] memory extraRewards = AURA_VAULT.extraRewards();
+        uint256 extraRewardsLength = extraRewards.length;
+        if (extraRewardsLength > 0) {
+            uint256 i;
+            for (; i < extraRewardsLength; ++i) {
+                IAuraStashToken auraStashToken =
+                    IAuraStashToken(IVirtualBalanceRewardPool(extraRewards[i]).rewardToken());
+                IERC20 extraRewardToken = IERC20(auraStashToken.baseToken());
+                uint256 rewardBalance = extraRewardToken.balanceOf(address(this));
+                if (rewardBalance > 0) {
+                    extraRewardToken.transfer(feeReceiver, rewardBalance);
+                }
+            }
+        }
+    }
+
+    /// @notice Allow ETH to be received.
+    receive() external payable { }
+
     //-------------------------------------------
     // Internal Functions
     //-------------------------------------------
@@ -306,17 +339,19 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
         /// @dev Deposit into Balancer V3
         (amountsIn, bptAmount,) = BALANCER_VAULT.addLiquidity(params);
 
+        BPT.approve(address(AURA_BOOSTER_LITE), bptAmount);
+
         /// @dev Deposit into Aura
         if (!AURA_BOOSTER_LITE.deposit(AURA_POOL_PID, bptAmount, true)) revert DepositFailed();
 
         /// @dev Return any remaining PRL.
-        uint256 prlBalanceToReturn = _maxPrlAmount - PRL.balanceOf(address(this));
+        uint256 prlBalanceToReturn = PRL.balanceOf(address(this));
         if (prlBalanceToReturn > 0) {
             PRL.transfer(msg.sender, prlBalanceToReturn);
         }
 
         /// @dev Return any remaining WETH.
-        uint256 wethBalanceToReturn = _maxEthAmount - WETH.balanceOf(address(this));
+        uint256 wethBalanceToReturn = WETH.balanceOf(address(this));
         if (wethBalanceToReturn > 0) {
             if (_isEth) {
                 WETH.withdraw(wethBalanceToReturn);
@@ -330,25 +365,29 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
     /// @notice Exit the pool.
     /// @param _bptAmount The amount of BPT to withdraw.
     /// @param _minPrlAmount The minimum amount of PRL to receive.
-    /// @param _minEthAmount The minimum amount of ETH to receive.
-    /// @return _ethAmount The amount of ETH received.
+    /// @param _minWethAmount The minimum amount of WETH to receive.
+    /// @return _wethAmount The amount of WETH received.
     /// @return _prlAmount The amount of PRL received.
     function _exitPool(
         uint256 _bptAmount,
         uint256 _minPrlAmount,
-        uint256 _minEthAmount
+        uint256 _minWethAmount
     )
         internal
-        returns (uint256 _ethAmount, uint256 _prlAmount)
+        returns (uint256 _wethAmount, uint256 _prlAmount)
     {
         uint256[] memory minAmountsOut = new uint256[](2);
-        minAmountsOut[0] = _minEthAmount;
+        minAmountsOut[0] = _minWethAmount;
         minAmountsOut[1] = _minPrlAmount;
 
         if (isReversedBalancerPair) {
             (minAmountsOut[0], minAmountsOut[1]) = (minAmountsOut[1], minAmountsOut[0]);
         }
 
+        /// @dev withdraw from aura
+        AURA_BOOSTER_LITE.withdraw(AURA_POOL_PID, _bptAmount);
+
+        BPT.approve(address(BALANCER_VAULT), _bptAmount);
         IBalancerVault.RemoveLiquidityParams memory params = IBalancerVault.RemoveLiquidityParams({
             pool: address(BPT),
             from: address(this),
@@ -357,41 +396,15 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
             kind: IBalancerVault.RemoveLiquidityKind.PROPORTIONAL,
             userData: ""
         });
-
-        BPT.approve(address(BALANCER_VAULT), _bptAmount);
         BALANCER_VAULT.removeLiquidity(params);
 
         _prlAmount = PRL.balanceOf(address(this));
-        _ethAmount = WETH.balanceOf(address(this));
+        _wethAmount = WETH.balanceOf(address(this));
 
-        if (_prlAmount < _minPrlAmount || _ethAmount < _minEthAmount) {
+        if (_prlAmount < _minPrlAmount || _wethAmount < _minWethAmount) {
             revert InsufficientAssetsReceived();
         }
     }
-
-    /// @notice Claim rewards from Aura Pool and transfer them to the fee receiver.
-    function claimRewards() external {
-        AURA_VAULT.getReward();
-        IERC20 mainRewardToken = IERC20(AURA_VAULT.rewardToken());
-        if (mainRewardToken.balanceOf(address(this)) > 0) {
-            mainRewardToken.transfer(feeReceiver, mainRewardToken.balanceOf(address(this)));
-        }
-
-        uint256 extraRewardsLength = AURA_VAULT.extraRewardsLength();
-        if (extraRewardsLength > 0) {
-            address[] memory extraRewards = AURA_VAULT.extraRewards();
-            uint256 i;
-            for (; i < extraRewardsLength; ++i) {
-                IERC20 extraRewardToken = IERC20(IAuraStashToken(extraRewards[i]).baseToken());
-                if (extraRewardToken.balanceOf(address(this)) > 0) {
-                    extraRewardToken.transfer(feeReceiver, extraRewardToken.balanceOf(address(this)));
-                }
-            }
-        }
-    }
-
-    /// @notice Allow ETH to be received.
-    receive() external payable { }
 
     //-------------------------------------------
     // Overrides

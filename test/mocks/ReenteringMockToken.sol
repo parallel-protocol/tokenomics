@@ -14,8 +14,8 @@ contract ReenteringMockToken is ERC20Mock {
         reenterData = _reenterData;
     }
 
-    function transfer(address _recipient, uint256 _amount) public override returns (bool) {
-        bool success = super.transfer(_recipient, _amount);
+    function transfer(address _receiver, uint256 _amount) public override returns (bool) {
+        bool success = super.transfer(_receiver, _amount);
 
         if (reenterTarget == address(0)) {
             return success;

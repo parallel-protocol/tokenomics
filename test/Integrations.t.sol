@@ -41,5 +41,27 @@ abstract contract Integrations_Test is Base_Test {
             DEFAULT_PENALTY_PERCENTAGE,
             DEFAULT_TIME_LOCK_DURATION
         );
+
+        _deployBalancerAndAuraMock(
+            [address(weth), address(prl)],
+            address(bpt),
+            address(auraBpt),
+            address(rewardToken),
+            address(extraRewardToken)
+        );
+
+        sprl2 = _deploySPRL2(
+            address(bpt),
+            users.daoTreasury.addr,
+            address(accessManager),
+            DEFAULT_PENALTY_PERCENTAGE,
+            DEFAULT_TIME_LOCK_DURATION,
+            balancerVaultMock,
+            auraBoosterLiteMock,
+            auraRewardPoolMock,
+            bpt,
+            prl,
+            weth
+        );
     }
 }

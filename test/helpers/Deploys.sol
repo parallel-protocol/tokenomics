@@ -8,6 +8,7 @@ import { OptionsBuilder } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/lib
 import { AccessManager, IAccessManaged } from "@openzeppelin/contracts/access/manager/AccessManager.sol";
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { IERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import { Auctioneer } from "contracts/fees/Auctioneer.sol";
 import { MainFeeDistributor } from "contracts/fees/MainFeeDistributor.sol";
@@ -15,11 +16,29 @@ import { SideChainFeeCollector } from "contracts/fees/SideChainFeeCollector.sol"
 import { FeeCollectorCore } from "contracts/fees/FeeCollectorCore.sol";
 
 import { sPRL1 } from "contracts/sPRL/sPRL1.sol";
+import { sPRL2 } from "contracts/sPRL/sPRL2.sol";
 import { TimeLockPenaltyERC20 } from "contracts/sPRL/TimeLockPenaltyERC20.sol";
 
+import { IBalancerVault } from "contracts/interfaces/IBalancerV3Vault.sol";
+import { IWrappedNative } from "contracts/interfaces/IWrappedNative.sol";
+import {
+    IAuraBoosterLite,
+    IAuraRewardPool,
+    IVirtualBalanceRewardPool,
+    IAuraStashToken
+} from "contracts/interfaces/IAura.sol";
+
 import { ERC20Mock } from "test/mocks/ERC20Mock.sol";
+import { WrappedNativeMock } from "test/mocks/WrapperNativeMock.sol";
 import { ReenteringMockToken } from "test/mocks/ReenteringMockToken.sol";
 import { BridgeableTokenMock } from "test/mocks/BridgeableTokenMock.sol";
+import {
+    AuraBoosterLiteMock,
+    AuraRewardPoolMock,
+    VirtualBalanceRewardPoolMock,
+    AuraStashTokenMock
+} from "test/mocks/AuraMock.sol";
+import { BalancerVaultMock } from "test/mocks/BalancerVaultMock.sol";
 
 import { SigUtils } from "./SigUtils.sol";
 
@@ -30,8 +49,21 @@ abstract contract Deploys is Test {
     ERC20Mock internal prl;
     ERC20Mock internal paUSD;
 
+    ERC20Mock internal bpt;
+    ERC20Mock internal auraBpt;
+    ERC20Mock internal extraRewardToken;
+    ERC20Mock internal rewardToken;
+
+    WrappedNativeMock internal weth;
+
     BridgeableTokenMock internal bridgeableTokenMock;
     ReenteringMockToken internal reenterToken;
+    BalancerVaultMock internal balancerVaultMock;
+
+    AuraBoosterLiteMock internal auraBoosterLiteMock;
+    AuraRewardPoolMock internal auraRewardPoolMock;
+    VirtualBalanceRewardPoolMock internal virtualBalanceRewardPoolMock;
+    AuraStashTokenMock internal auraStashTokenMock;
 
     Auctioneer internal auctioneer;
 
@@ -39,6 +71,7 @@ abstract contract Deploys is Test {
     SideChainFeeCollector internal sideChainFeeCollector;
     AccessManager internal accessManager;
 
+    sPRL2 internal sprl2;
     sPRL1 internal sprl1;
     TimeLockPenaltyERC20 internal timeLockPenaltyERC20;
 
@@ -68,9 +101,15 @@ abstract contract Deploys is Test {
         return _erc20;
     }
 
+    function _deployWrappedNativeMock() internal returns (WrappedNativeMock) {
+        WrappedNativeMock _wrappedNative = new WrappedNativeMock("Wrapped Native", "WNative", 18);
+        vm.label({ account: address(_wrappedNative), newLabel: "WNative" });
+        return _wrappedNative;
+    }
+
     function _deployTimeLockPenaltyERC20(
         address _underlying,
-        address _feeRecipient,
+        address _feeReceiver,
         address _accessManager,
         uint256 _penaltyPercentage,
         uint64 _timeLockDuration
@@ -82,7 +121,7 @@ abstract contract Deploys is Test {
             "TimeLockPenaltyERC20",
             "TLPERC20",
             _underlying,
-            _feeRecipient,
+            _feeReceiver,
             _accessManager,
             _penaltyPercentage,
             _timeLockDuration
@@ -93,7 +132,7 @@ abstract contract Deploys is Test {
 
     function _deploySPRL1(
         address _underlying,
-        address _feeRecipient,
+        address _feeReceiver,
         address _accessManager,
         uint256 _startPenaltyPercentage,
         uint64 _timeLockDuration
@@ -101,10 +140,42 @@ abstract contract Deploys is Test {
         internal
         returns (sPRL1)
     {
-        sPRL1 _sPRL1 =
-            new sPRL1(_underlying, _feeRecipient, _accessManager, _startPenaltyPercentage, _timeLockDuration);
+        sPRL1 _sPRL1 = new sPRL1(_underlying, _feeReceiver, _accessManager, _startPenaltyPercentage, _timeLockDuration);
         vm.label({ account: address(_sPRL1), newLabel: "sPRL1" });
         return _sPRL1;
+    }
+
+    function _deploySPRL2(
+        address _auraBpt,
+        address _feeReceiver,
+        address _accessManager,
+        uint256 _startPenaltyPercentage,
+        uint64 _timeLockDuration,
+        IBalancerVault _balancerVault,
+        IAuraBoosterLite _auraBoosterLite,
+        IAuraRewardPool _auraVault,
+        IERC20 _balancerBPT,
+        IERC20 _prl,
+        IWrappedNative _weth
+    )
+        internal
+        returns (sPRL2)
+    {
+        sPRL2 _sPRL2 = new sPRL2(
+            _auraBpt,
+            _feeReceiver,
+            _accessManager,
+            _startPenaltyPercentage,
+            _timeLockDuration,
+            _balancerVault,
+            _auraBoosterLite,
+            _auraVault,
+            _balancerBPT,
+            _prl,
+            _weth
+        );
+        vm.label({ account: address(_sPRL2), newLabel: "sPRL2" });
+        return _sPRL2;
     }
 
     function _deployBridgeableTokenMock(
@@ -164,16 +235,43 @@ abstract contract Deploys is Test {
         address _accessManager,
         uint32 _lzEidReceiver,
         address _bridgeableToken,
-        address _destinationRecipient,
+        address _destinationReceiver,
         address _feeToken
     )
         internal
         returns (SideChainFeeCollector)
     {
         SideChainFeeCollector _sideChainSideChainFeeCollector = new SideChainFeeCollector(
-            _accessManager, _lzEidReceiver, _bridgeableToken, _destinationRecipient, _feeToken
+            _accessManager, _lzEidReceiver, _bridgeableToken, _destinationReceiver, _feeToken
         );
         vm.label({ account: address(_sideChainSideChainFeeCollector), newLabel: "SideChainFeeCollector" });
         return _sideChainSideChainFeeCollector;
+    }
+
+    function _deployBalancerAndAuraMock(
+        address[2] memory _tokens,
+        address _bpt,
+        address _auraBpt,
+        address _rewardToken,
+        address _extraReward
+    )
+        internal
+    {
+        balancerVaultMock = new BalancerVaultMock(_tokens, _bpt);
+        vm.label({ account: address(balancerVaultMock), newLabel: "BalancerVaultMock" });
+
+        auraStashTokenMock = new AuraStashTokenMock(_extraReward);
+        vm.label({ account: address(auraStashTokenMock), newLabel: "AuraStashTokenMock" });
+
+        virtualBalanceRewardPoolMock = new VirtualBalanceRewardPoolMock(address(auraStashTokenMock));
+        vm.label({ account: address(virtualBalanceRewardPoolMock), newLabel: "VirtualBalanceRewardPoolMock" });
+
+        address[] memory _extraRewards = new address[](1);
+        _extraRewards[0] = address(virtualBalanceRewardPoolMock);
+        auraRewardPoolMock = new AuraRewardPoolMock(_rewardToken, _extraRewards);
+        vm.label({ account: address(auraRewardPoolMock), newLabel: "AuraRewardPoolMock" });
+
+        auraBoosterLiteMock = new AuraBoosterLiteMock(_bpt, _auraBpt);
+        vm.label({ account: address(auraBoosterLiteMock), newLabel: "AuraBoosterLiteMock" });
     }
 }
