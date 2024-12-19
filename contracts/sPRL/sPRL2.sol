@@ -43,6 +43,47 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
     bool public immutable isReversedBalancerPair;
 
     //-------------------------------------------
+    // Events
+    //-------------------------------------------
+
+    /// @notice Event emitted when a user withdraws PRL and WETH.
+    /// @param requestId The ID of the withdrawal request.
+    /// @param user The address of the user.
+    /// @param prlAmount The amount of PRL received.
+    /// @param wethAmount The amount of WETH received.
+    /// @param slashBptAmount The amount of BPT sent to the fee receiver.
+    event WithdrawlPRLAndWeth(
+        uint256 requestId, address user, uint256 prlAmount, uint256 wethAmount, uint256 slashBptAmount
+    );
+    /// @notice Event emitted when a user withdraws PRL and WETH for multiple requests.
+    /// @param requestIds The IDs of the withdrawal requests.
+    /// @param user The address of the user.
+    /// @param prlAmount The amount of PRL received.
+    /// @param wethAmount The amount of WETH received.
+    /// @param slashBptAmount The amount of BPT sent to the fee receiver.
+    event WithdrawlPRLAndWethMultiple(
+        uint256[] requestIds, address user, uint256 prlAmount, uint256 wethAmount, uint256 slashBptAmount
+    );
+    /// @notice Event emitted when a user withdraws PRL and ETH.
+    /// @param requestId The ID of the withdrawal request.
+    /// @param user The address of the user.
+    /// @param prlAmount The amount of PRL received.
+    /// @param ethAmount The amount of ETH received.
+    /// @param slashBptAmount The amount of BPT sent to the fee receiver.
+    event WithdrawlPRLAndEth(
+        uint256 requestId, address user, uint256 prlAmount, uint256 ethAmount, uint256 slashBptAmount
+    );
+    /// @notice Event emitted when a user withdraws PRL and ETH for multiple requests.
+    /// @param requestIds The IDs of the withdrawal requests.
+    /// @param user The address of the user.
+    /// @param prlAmount The amount of PRL received.
+    /// @param ethAmount The amount of ETH received.
+    /// @param slashBptAmount The amount of BPT sent to the fee receiver.
+    event WithdrawlPRLAndEthMultiple(
+        uint256[] requestIds, address user, uint256 prlAmount, uint256 ethAmount, uint256 slashBptAmount
+    );
+
+    //-------------------------------------------
     // Errors
     //-------------------------------------------
 
@@ -176,9 +217,15 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
         external
         returns (uint256 prlAmount, uint256 wethAmount)
     {
-        (uint256 bptAmount,) = _withdraw(_requestId);
+        (uint256 bptAmount, uint256 slashBptAmount) = _withdraw(_requestId);
         (prlAmount, wethAmount) = _exitPool(bptAmount, _minPrlAmount, _minWethAmount);
 
+        // Mint the slash amount of BPT to the fee receiver
+        if (slashBptAmount > 0) {
+            _mint(feeReceiver, slashBptAmount);
+        }
+
+        emit WithdrawlPRLAndWeth(_requestId, msg.sender, prlAmount, wethAmount, slashBptAmount);
         PRL.transfer(msg.sender, prlAmount);
         WETH.transfer(msg.sender, wethAmount);
     }
@@ -198,13 +245,21 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
         returns (uint256 prlAmount, uint256 wethAmount)
     {
         uint256 totalBptAmount;
+        uint256 totalSlashBptAmount;
         for (uint8 i; i < _requestIds.length; i++) {
-            (uint256 bptAmount,) = _withdraw(_requestIds[i]);
+            (uint256 bptAmount, uint256 slashBptAmount) = _withdraw(_requestIds[i]);
             totalBptAmount += bptAmount;
+            totalSlashBptAmount += slashBptAmount;
         }
 
         (prlAmount, wethAmount) = _exitPool(totalBptAmount, _minPrlAmount, _minWethAmount);
 
+        // Mint the slash amount of BPT to the fee receiver
+        if (totalSlashBptAmount > 0) {
+            _mint(feeReceiver, totalSlashBptAmount);
+        }
+
+        emit WithdrawlPRLAndWethMultiple(_requestIds, msg.sender, prlAmount, wethAmount, totalSlashBptAmount);
         PRL.transfer(msg.sender, prlAmount);
         WETH.transfer(msg.sender, wethAmount);
     }
@@ -223,9 +278,14 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
         external
         returns (uint256 prlAmount, uint256 ethAmount)
     {
-        (uint256 bptAmount,) = _withdraw(_requestId);
+        (uint256 bptAmount, uint256 slashBptAmount) = _withdraw(_requestId);
         (prlAmount, ethAmount) = _exitPool(bptAmount, _minPrlAmount, _minEthAmount);
+        // Mint the slash amount of BPT to the fee receiver
+        if (slashBptAmount > 0) {
+            _mint(feeReceiver, slashBptAmount);
+        }
 
+        emit WithdrawlPRLAndEth(_requestId, msg.sender, prlAmount, ethAmount, slashBptAmount);
         PRL.transfer(msg.sender, prlAmount);
 
         WETH.withdraw(ethAmount);
@@ -247,13 +307,21 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
         returns (uint256 prlAmount, uint256 ethAmount)
     {
         uint256 totalBptAmount;
+        uint256 totalSlashBptAmount;
         for (uint8 i; i < _requestIds.length; i++) {
-            (uint256 bptAmount,) = _withdraw(_requestIds[i]);
+            (uint256 bptAmount, uint256 slashBptAmount) = _withdraw(_requestIds[i]);
             totalBptAmount += bptAmount;
+            totalSlashBptAmount += slashBptAmount;
         }
 
         (prlAmount, ethAmount) = _exitPool(totalBptAmount, _minPrlAmount, _minEthAmount);
 
+        // Mint the slash amount of BPT to the fee receiver
+        if (totalSlashBptAmount > 0) {
+            _mint(feeReceiver, totalSlashBptAmount);
+        }
+
+        emit WithdrawlPRLAndEthMultiple(_requestIds, msg.sender, prlAmount, ethAmount, totalSlashBptAmount);
         PRL.transfer(msg.sender, prlAmount);
 
         WETH.withdraw(ethAmount);

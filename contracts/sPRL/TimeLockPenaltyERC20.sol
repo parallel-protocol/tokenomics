@@ -364,7 +364,7 @@ contract TimeLockPenaltyERC20 is ERC20Permit, AccessManaged, Pausable {
 
     /// @notice Withdraw assets from the contract
     /// @param _id The ID of the withdrawal request.
-    /// @return withdrawAmount The amount of assets user withdrew.
+    /// @return withdrawAmount The amount of assets user received.
     /// @return slashAmount The amount of assets that were slashed.
     function _withdraw(uint256 _id) internal returns (uint256 withdrawAmount, uint256 slashAmount) {
         WithdrawalRequest storage request = userVsWithdrawals[msg.sender][_id];
