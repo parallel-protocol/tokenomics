@@ -27,6 +27,16 @@ abstract contract Base_Test is Test, Deploys, Assertions, Defaults, Utils {
         paUSD = _deployERC20Mock("paUSD", "paUSD", 18);
         // Deploy PRL token contract.
         prl = _deployERC20Mock("prl", "PRL", 18);
+        // Deploy BPT token contract.
+        bpt = _deployERC20Mock("bpt", "bpt", 18);
+        // Deploy BPT token contract.
+        auraBpt = _deployERC20Mock("auraBpt", "auraBpt", 18);
+        // Deploy WrappedNative token contract.
+        weth = _deployWrappedNativeMock();
+        // Deploy reward token contract.
+        rewardToken = _deployERC20Mock("rewardToken", "rewardToken", 18);
+        // Deploy extra reward token contract.
+        extraRewardToken = _deployERC20Mock("extraRewardToken", "extraRewardToken", 18);
 
         // Deploy bridgeable token mock contract.
         bridgeableTokenMock = _deployBridgeableTokenMock(address(par));
@@ -52,6 +62,7 @@ abstract contract Base_Test is Test, Deploys, Assertions, Defaults, Utils {
             par.mint(user.addr, INITIAL_BALANCE);
             paUSD.mint(user.addr, INITIAL_BALANCE);
             prl.mint(user.addr, INITIAL_BALANCE);
+            weth.mint(user.addr, INITIAL_BALANCE);
         }
     }
 

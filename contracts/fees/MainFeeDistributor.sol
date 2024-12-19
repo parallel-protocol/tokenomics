@@ -19,21 +19,21 @@ contract MainFeeDistributor is FeeCollectorCore {
 
     /// @notice token bridgeableToken contract
     IERC20 public bridgeableToken;
-    /// @notice Total shares of the fee recipients.
+    /// @notice Total shares of the fee receivers.
     uint256 public totalShares;
-    /// @notice Mapping of the shares of the fee recipients.
+    /// @notice Mapping of the shares of the fee receivers.
     mapping(address => uint256) public shares;
-    /// @notice Array of the fee recipients.
-    address[] public feeRecipients;
+    /// @notice Array of the fee receivers.
+    address[] public feeReceivers;
 
     //-------------------------------------------
     // Events
     //-------------------------------------------
 
-    /// @notice Emitted when a new fee recipient is added to the fee distribution.
-    /// @param feeRecipient The address of the fee recipient.
-    /// @param shares The number of shares assigned to the fee recipient.
-    event FeeRecipientAdded(address feeRecipient, uint256 shares);
+    /// @notice Emitted when a new fee receiver is added to the fee distribution.
+    /// @param feeReceiver The address of the fee receiver.
+    /// @param shares The number of shares assigned to the fee receiver.
+    event FeeReceiverAdded(address feeReceiver, uint256 shares);
 
     /// @notice Emitted when fees are released.
     /// @param income The amount of income released.
@@ -48,14 +48,14 @@ contract MainFeeDistributor is FeeCollectorCore {
     // Errors
     //-------------------------------------------
 
-    /// @notice Thrown when the fee recipient address is zero.
-    error FeeRecipientZeroAddress();
+    /// @notice Thrown when the fee receiver address is zero.
+    error FeeReceiverZeroAddress();
     /// @notice Thrown when the shares are zero.
     error SharesIsZero();
-    /// @notice Thrown when the fee recipient is already added.
-    error FeeRecipientAlreadyAdded();
-    /// @notice Thrown when there is no fee recipients.
-    error NoFeeRecipients();
+    /// @notice Thrown when the fee receiver is already added.
+    error FeeReceiverAlreadyAdded();
+    /// @notice Thrown when there is no fee receivers.
+    error NoFeeReceivers();
     /// @notice Thrown when the array length mismatch.
     error ArrayLengthMismatch();
     /// @notice Thrown when the maximum swap amount is zero.
@@ -88,19 +88,19 @@ contract MainFeeDistributor is FeeCollectorCore {
     // External functions
     //-------------------------------------------
 
-    /// @notice Release the fees to the fee recipients according to their shares.
+    /// @notice Release the fees to the fee receivers according to their shares.
     function release() external nonReentrant {
         uint256 income = feeToken.balanceOf(address(this));
         if (income == 0) revert NothingToRelease();
-        if (feeRecipients.length == 0) revert NoFeeRecipients();
-        for (uint256 i = 0; i < feeRecipients.length; i++) {
-            address feeRecipient = feeRecipients[i];
-            _release(income, feeRecipient);
+        if (feeReceivers.length == 0) revert NoFeeReceivers();
+        for (uint256 i = 0; i < feeReceivers.length; i++) {
+            address feeReceiver = feeReceivers[i];
+            _release(income, feeReceiver);
         }
     }
 
     /// @notice swap Lz-Token to Token if limit not reached.
-    /// @dev lzToken doesn't need approval to be transfered.
+    /// @dev lzToken doesn't need approval to be swapped.
     function swapLzToken() external nonReentrant {
         uint256 balance = bridgeableToken.balanceOf(address(this));
         if (balance == 0) revert NothingToSwap();
@@ -115,27 +115,28 @@ contract MainFeeDistributor is FeeCollectorCore {
         emit LzTokenSwapped(swapAmount);
     }
 
-    function getFeeRecipients() external view returns (address[] memory) {
-        return feeRecipients;
+    /// @notice Get the addresses that will receive fees.
+    function getFeeReceivers() external view returns (address[] memory) {
+        return feeReceivers;
     }
 
     //-------------------------------------------
     // AccessManaged functions
     //-------------------------------------------
 
-    /// @notice Allow to update the fees recipients list and shares.
+    /// @notice Allow to update the fees receivers list and shares.
     /// @dev This function can only be called by the accessManager.
-    /// @param _feeRecipients The list of the fee recipients.
-    /// @param _shares The list of the shares assigned to the fee recipients.
-    function updateFeeRecipients(address[] memory _feeRecipients, uint256[] memory _shares) public restricted {
-        if (_feeRecipients.length == 0) revert NoFeeRecipients();
-        if (_feeRecipients.length != _shares.length) revert ArrayLengthMismatch();
-        delete feeRecipients;
+    /// @param _feeReceivers The list of the fee receivers.
+    /// @param _shares The list of the shares assigned to the fee receivers.
+    function updateFeeReceivers(address[] memory _feeReceivers, uint256[] memory _shares) public restricted {
+        if (_feeReceivers.length == 0) revert NoFeeReceivers();
+        if (_feeReceivers.length != _shares.length) revert ArrayLengthMismatch();
+        delete feeReceivers;
 
         uint256 _totalShares = 0;
         uint256 i = 0;
-        for (; i < _feeRecipients.length; ++i) {
-            _totalShares += _addFeeRecipient(_feeRecipients[i], _shares[i]);
+        for (; i < _feeReceivers.length; ++i) {
+            _totalShares += _addFeeReceiver(_feeReceivers[i], _shares[i]);
         }
         totalShares = _totalShares;
     }
@@ -152,24 +153,24 @@ contract MainFeeDistributor is FeeCollectorCore {
     // Internal/Private functions
     //-------------------------------------------
 
-    /// @notice Release the fees to the fee recipient.
+    /// @notice Release the fees to the fee receiver.
     /// @param _totalIncomeToDistribute The total amount of income received.
-    /// @param _feeRecipient The address of the fee recipient.
-    function _release(uint256 _totalIncomeToDistribute, address _feeRecipient) internal {
-        uint256 amount = _totalIncomeToDistribute * shares[_feeRecipient] / totalShares;
-        feeToken.safeTransfer(_feeRecipient, amount);
+    /// @param _feeReceiver The address of the fee receiver.
+    function _release(uint256 _totalIncomeToDistribute, address _feeReceiver) internal {
+        uint256 amount = _totalIncomeToDistribute * shares[_feeReceiver] / totalShares;
+        feeToken.safeTransfer(_feeReceiver, amount);
     }
 
-    /// @notice Add a new fee recipient.
-    /// @param _feeRecipient The address of the fee recipient.
-    /// @param _shares The number of shares assigned to the fee recipient.
-    function _addFeeRecipient(address _feeRecipient, uint256 _shares) internal returns (uint256) {
-        if (_feeRecipient == address(0)) revert FeeRecipientZeroAddress();
+    /// @notice Add a new fee receiver.
+    /// @param _feeReceiver The address of the fee receiver.
+    /// @param _shares The number of shares assigned to the fee receiver.
+    function _addFeeReceiver(address _feeReceiver, uint256 _shares) internal returns (uint256) {
+        if (_feeReceiver == address(0)) revert FeeReceiverZeroAddress();
         if (_shares == 0) revert SharesIsZero();
 
-        feeRecipients.push(_feeRecipient);
-        shares[_feeRecipient] = _shares;
-        emit FeeRecipientAdded(_feeRecipient, _shares);
+        feeReceivers.push(_feeReceiver);
+        shares[_feeReceiver] = _shares;
+        emit FeeReceiverAdded(_feeReceiver, _shares);
         return _shares;
     }
 }

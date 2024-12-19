@@ -30,7 +30,7 @@ contract SideChainFeeCollector is FeeCollectorCore {
     uint32 public lzEidReceiver;
 
     /// @notice Address of the wallet that will receive the fees on the receiving chain.
-    address public destinationRecipient;
+    address public destinationReceiver;
 
     //-------------------------------------------
     // Events
@@ -46,19 +46,19 @@ contract SideChainFeeCollector is FeeCollectorCore {
     ///@notice SideChainFeeCollector constructor.
     ///@param _accessManager address of the AccessManager contract.
     ///@param _lzEidReceiver LayerZero Eid value of the receiving chain.
-    ///@param _destinationRecipient address of the fee receiver on the destination chain.
+    ///@param _destinationReceiver address of the fee receiver on the destination chain.
     ///@param _bridgeableToken address of the bridgeable token.
     ///@param _feeToken address of the fee token.
     constructor(
         address _accessManager,
         uint32 _lzEidReceiver,
         address _bridgeableToken,
-        address _destinationRecipient,
+        address _destinationReceiver,
         address _feeToken
     )
         FeeCollectorCore(_accessManager, _feeToken)
     {
-        destinationRecipient = _destinationRecipient;
+        destinationReceiver = _destinationReceiver;
         bridgeableToken = IOFT(_bridgeableToken);
         lzEidReceiver = _lzEidReceiver;
     }
@@ -77,7 +77,7 @@ contract SideChainFeeCollector is FeeCollectorCore {
         }
         SendParam memory sendParam = SendParam(
             lzEidReceiver,
-            OFTMsgCodec.addressToBytes32(destinationRecipient),
+            OFTMsgCodec.addressToBytes32(destinationReceiver),
             amountSent,
             amountSent,
             _options,
