@@ -17,6 +17,9 @@ import { FeeCollectorCore } from "contracts/fees/FeeCollectorCore.sol";
 
 import { sPRL1 } from "contracts/sPRL/sPRL1.sol";
 import { sPRL2 } from "contracts/sPRL/sPRL2.sol";
+
+import { RewardMerkleDistributor } from "contracts/rewardMerkleDistributor/RewardMerkleDistributor.sol";
+
 import { TimeLockPenaltyERC20 } from "contracts/sPRL/TimeLockPenaltyERC20.sol";
 
 import { IBalancerVault } from "contracts/interfaces/IBalancerV3Vault.sol";
@@ -66,6 +69,8 @@ abstract contract Deploys is Test {
     AuraStashTokenMock internal auraStashTokenMock;
 
     Auctioneer internal auctioneer;
+
+    RewardMerkleDistributor internal rewardMerkleDistributor;
 
     MainFeeDistributor internal mainFeeDistributor;
     SideChainFeeCollector internal sideChainFeeCollector;
@@ -176,6 +181,20 @@ abstract contract Deploys is Test {
         );
         vm.label({ account: address(_sPRL2), newLabel: "sPRL2" });
         return _sPRL2;
+    }
+
+    function _deployRewardMerkleDistributor(
+        address _accessManager,
+        address _token,
+        address _expiredRewardsRecipient
+    )
+        internal
+        returns (RewardMerkleDistributor)
+    {
+        RewardMerkleDistributor _rewardMerkleDistributor =
+            new RewardMerkleDistributor(_accessManager, _token, _expiredRewardsRecipient);
+        vm.label({ account: address(_rewardMerkleDistributor), newLabel: "RewardMerkleDistributor" });
+        return _rewardMerkleDistributor;
     }
 
     function _deployBridgeableTokenMock(

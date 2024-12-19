@@ -4,7 +4,7 @@ pragma solidity 0.8.25;
 import "test/Integrations.t.sol";
 
 contract Auctioneer_updatePaymentReceiver_Integrations_Test is Integrations_Test {
-    address public newPaymentReceiver = makeAddr("newPaymentReceiver");
+    address internal newPaymentReceiver = makeAddr("newPaymentReceiver");
 
     function test_Auctioneer_UpdatePaymentReceiver() external {
         vm.startPrank(users.admin.addr);

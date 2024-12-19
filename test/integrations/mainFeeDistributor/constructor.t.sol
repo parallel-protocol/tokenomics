@@ -9,7 +9,7 @@ contract MainFeeDistributor_Constructor_Integrations_Test is Base_Test {
         mainFeeDistributor = new MainFeeDistributor(address(accessManager), address(bridgeableTokenMock), address(par));
     }
 
-    function test_MainFeeDistributor_Constructor() public view {
+    function test_MainFeeDistributor_Constructor() external view {
         assertEq(mainFeeDistributor.authority(), address(accessManager));
         assertEq(address(mainFeeDistributor.bridgeableToken()), address(bridgeableTokenMock));
         assertEq(mainFeeDistributor.feeToken(), par);

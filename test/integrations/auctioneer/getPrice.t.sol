@@ -38,7 +38,7 @@ contract Auctioneer_GetPrice_Integrations_Test is Integrations_Test {
     }
 
     function test_Auctioneer_GetPrice_MAX_INIT_PRICE_And_MAX_EPOCH_DURATION_MinusOne_DoNotOverflowAndNotReturnZero()
-        public
+        external
     {
         Auctioneer tempAuctioneer = new Auctioneer(
             address(accessManager),

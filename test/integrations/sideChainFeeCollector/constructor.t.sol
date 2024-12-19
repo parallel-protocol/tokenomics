@@ -11,7 +11,7 @@ contract SideChainFeeCollector_Constructor_Integrations_Test is Base_Test {
         );
     }
 
-    function test_SideChainFeeCollector_Constructor() public view {
+    function test_SideChainFeeCollector_Constructor() external view {
         assertEq(sideChainFeeCollector.authority(), address(accessManager));
         assertEq(sideChainFeeCollector.destinationReceiver(), address(mainFeeDistributor));
         assertEq(address(sideChainFeeCollector.bridgeableToken()), address(bridgeableTokenMock));

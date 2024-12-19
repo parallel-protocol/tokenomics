@@ -149,7 +149,7 @@ contract Auctioneer_Buy_Integrations_Test is Integrations_Test {
         _;
     }
 
-    function test_Auctioneer_Buy_Reenter() public SetupReentrancyCall {
+    function test_Auctioneer_Buy_Reenter() external SetupReentrancyCall {
         reenterToken.setReenterTargetAndData(
             address(auctioneer),
             abi.encodeWithSelector(auctioneer.buy.selector, _assetsAddresses(), assetsReceiver, INIT_PRICE)
@@ -161,14 +161,14 @@ contract Auctioneer_Buy_Integrations_Test is Integrations_Test {
         auctioneer.buy(reenterAsset, assetsReceiver, 0, INIT_PRICE);
     }
 
-    function test_Auctioneer_GetPrice_Reenter() public SetupReentrancyCall {
+    function test_Auctioneer_GetPrice_Reenter() external SetupReentrancyCall {
         reenterToken.setReenterTargetAndData(address(auctioneer), abi.encodeWithSelector(auctioneer.getPrice.selector));
 
         vm.expectRevert(Auctioneer.Reentrancy.selector);
         auctioneer.buy(reenterAsset, assetsReceiver, 0, INIT_PRICE);
     }
 
-    function testBuyReenter_GetSlot0_Reenter() public SetupReentrancyCall {
+    function testBuyReenter_GetSlot0_Reenter() external SetupReentrancyCall {
         reenterToken.setReenterTargetAndData(address(auctioneer), abi.encodeWithSelector(auctioneer.getSlot0.selector));
 
         vm.expectRevert(Auctioneer.Reentrancy.selector);
