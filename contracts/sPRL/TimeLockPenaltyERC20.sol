@@ -61,7 +61,7 @@ contract TimeLockPenaltyERC20 is ERC20Permit, AccessManaged, Pausable {
     /// @notice The amount of assets that are in unlocking state.
     uint256 public unlockingAssets;
     /// @notice The penalties percentage that will be applied at request time.
-    uint256 public startPenaltyPercentage = 1e18;
+    uint256 public startPenaltyPercentage;
     /// @notice Mapping of user to their withdrawal requests.
     mapping(address user => mapping(uint256 requestId => WithdrawalRequest request)) public userVsWithdrawals;
     /// @notice Mapping of user to their next withdrawal request ID.

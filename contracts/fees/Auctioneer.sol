@@ -258,7 +258,7 @@ contract Auctioneer is AccessManaged, Pausable {
     /// @notice Allow to withdraw token own by the contract.
     /// @dev This function can only be called by the accessManager.
     /// @param _token The address of the ERC20 token to rescue.
-    /// @param _to The address of the recipient.
+    /// @param _to The address of the receiver.
     /// @param _amount The amount of tokens to rescue.
     function recoverToken(address _token, uint256 _amount, address _to) external restricted {
         IERC20(_token).safeTransfer(_to, _amount);

@@ -3,99 +3,99 @@ pragma solidity 0.8.25;
 
 import "test/Integrations.t.sol";
 
-contract MainFeeDistributor_UpdateFeeRecipients_Integrations_Test is Integrations_Test {
-    address[] recipients;
+contract MainFeeDistributor_UpdateFeeReceivers_Integrations_Test is Integrations_Test {
+    address[] receivers;
     uint256[] shares;
 
     function setUp() public override {
         super.setUp();
 
-        recipients.push(users.daoTreasury.addr);
-        recipients.push(users.insuranceFundMultisig.addr);
+        receivers.push(users.daoTreasury.addr);
+        receivers.push(users.insuranceFundMultisig.addr);
 
         shares.push(1);
         shares.push(2);
     }
 
-    function test_MainFeeDistributor_UpdateFeeRecipients() external {
+    function test_MainFeeDistributor_UpdateFeeReceivers() external {
         vm.startPrank(users.admin.addr);
 
-        mainFeeDistributor.updateFeeRecipients(recipients, shares);
+        mainFeeDistributor.updateFeeReceivers(receivers, shares);
 
         assertEq(mainFeeDistributor.totalShares(), 3);
         assertEq(mainFeeDistributor.shares(users.daoTreasury.addr), 1);
         assertEq(mainFeeDistributor.shares(users.insuranceFundMultisig.addr), 2);
 
-        address[] memory _feeRecipients = mainFeeDistributor.getFeeRecipients();
-        assertEq(_feeRecipients.length, 2);
-        assertEq(_feeRecipients[0], recipients[0]);
-        assertEq(_feeRecipients[1], recipients[1]);
+        address[] memory _feeReceivers = mainFeeDistributor.getFeeReceivers();
+        assertEq(_feeReceivers.length, 2);
+        assertEq(_feeReceivers[0], receivers[0]);
+        assertEq(_feeReceivers[1], receivers[1]);
     }
 
-    function test_MainFeeDistributor_UpdateFeeRecipients_ReplaceCorrectlyCurrentFeeRecipients() external {
+    function test_MainFeeDistributor_UpdateFeeReceivers_ReplaceCorrectlyCurrentFeeReceivers() external {
         vm.startPrank(users.admin.addr);
-        /// @notice Default fee recipients are `daoTreasury` and `insuranceFundMultisig`.
-        mainFeeDistributor.updateFeeRecipients(recipients, shares);
+        /// @notice Default fee receivers are `daoTreasury` and `insuranceFundMultisig`.
+        mainFeeDistributor.updateFeeReceivers(receivers, shares);
 
-        address[] memory newRecipients = new address[](3);
-        newRecipients[0] = makeAddr("newRecipient 1");
-        newRecipients[1] = makeAddr("newRecipient 2");
-        newRecipients[2] = makeAddr("newRecipient 3");
+        address[] memory newReceivers = new address[](3);
+        newReceivers[0] = makeAddr("newReceiver 1");
+        newReceivers[1] = makeAddr("newReceiver 2");
+        newReceivers[2] = makeAddr("newReceiver 3");
         uint256[] memory newShares = new uint256[](3);
         newShares[0] = 10;
         newShares[1] = 20;
         newShares[2] = 30;
 
-        mainFeeDistributor.updateFeeRecipients(newRecipients, newShares);
+        mainFeeDistributor.updateFeeReceivers(newReceivers, newShares);
         assertEq(mainFeeDistributor.totalShares(), 60);
-        assertEq(mainFeeDistributor.shares(newRecipients[0]), 10);
-        assertEq(mainFeeDistributor.shares(newRecipients[1]), 20);
-        assertEq(mainFeeDistributor.shares(newRecipients[2]), 30);
+        assertEq(mainFeeDistributor.shares(newReceivers[0]), 10);
+        assertEq(mainFeeDistributor.shares(newReceivers[1]), 20);
+        assertEq(mainFeeDistributor.shares(newReceivers[2]), 30);
 
-        address[] memory _feeRecipients = mainFeeDistributor.getFeeRecipients();
-        assertEq(_feeRecipients.length, 3);
-        assertEq(_feeRecipients[0], newRecipients[0]);
-        assertEq(_feeRecipients[1], newRecipients[1]);
-        assertEq(_feeRecipients[2], newRecipients[2]);
+        address[] memory _feeReceivers = mainFeeDistributor.getFeeReceivers();
+        assertEq(_feeReceivers.length, 3);
+        assertEq(_feeReceivers[0], newReceivers[0]);
+        assertEq(_feeReceivers[1], newReceivers[1]);
+        assertEq(_feeReceivers[2], newReceivers[2]);
     }
 
-    function test_MainFeeDistributor_UpdateFeeRecipients_RevertWhen_WhenArrayEmpty() external {
+    function test_MainFeeDistributor_UpdateFeeReceivers_RevertWhen_WhenArrayEmpty() external {
         vm.startPrank(users.admin.addr);
         address[] memory emptyArray = new address[](0);
 
-        vm.expectRevert(abi.encodeWithSelector(MainFeeDistributor.NoFeeRecipients.selector));
-        mainFeeDistributor.updateFeeRecipients(emptyArray, shares);
+        vm.expectRevert(abi.encodeWithSelector(MainFeeDistributor.NoFeeReceivers.selector));
+        mainFeeDistributor.updateFeeReceivers(emptyArray, shares);
     }
 
-    function test_MainFeeDistributor_UpdateFeeRecipients_RevertWhen_WhenArrayLengthMisMatch() external {
+    function test_MainFeeDistributor_UpdateFeeReceivers_RevertWhen_WhenArrayLengthMisMatch() external {
         vm.startPrank(users.admin.addr);
-        address[] memory wrongLengthRecipients = new address[](1);
-        wrongLengthRecipients[0] = users.daoTreasury.addr;
+        address[] memory wrongLengthReceivers = new address[](1);
+        wrongLengthReceivers[0] = users.daoTreasury.addr;
         vm.expectRevert(abi.encodeWithSelector(MainFeeDistributor.ArrayLengthMismatch.selector));
-        mainFeeDistributor.updateFeeRecipients(wrongLengthRecipients, shares);
+        mainFeeDistributor.updateFeeReceivers(wrongLengthReceivers, shares);
     }
 
-    function test_MainFeeDistributor_UpdateFeeRecipients_RevertWhen_WhenRecipientIsAddressZero() external {
+    function test_MainFeeDistributor_UpdateFeeReceivers_RevertWhen_WhenReceiverIsAddressZero() external {
         vm.startPrank(users.admin.addr);
-        address[] memory wrongRecipients = new address[](2);
-        wrongRecipients[0] = users.daoTreasury.addr;
-        wrongRecipients[1] = address(0);
-        vm.expectRevert(abi.encodeWithSelector(MainFeeDistributor.FeeRecipientZeroAddress.selector));
-        mainFeeDistributor.updateFeeRecipients(wrongRecipients, shares);
+        address[] memory wrongReceivers = new address[](2);
+        wrongReceivers[0] = users.daoTreasury.addr;
+        wrongReceivers[1] = address(0);
+        vm.expectRevert(abi.encodeWithSelector(MainFeeDistributor.FeeReceiverZeroAddress.selector));
+        mainFeeDistributor.updateFeeReceivers(wrongReceivers, shares);
     }
 
-    function test_MainFeeDistributor_UpdateFeeRecipients_RevertWhen_WhenRecipientSharesIsZero() external {
+    function test_MainFeeDistributor_UpdateFeeReceivers_RevertWhen_WhenReceiverSharesIsZero() external {
         vm.startPrank(users.admin.addr);
         uint256[] memory wrongShares = new uint256[](2);
         wrongShares[0] = 1;
         wrongShares[1] = 0;
         vm.expectRevert(abi.encodeWithSelector(MainFeeDistributor.SharesIsZero.selector));
-        mainFeeDistributor.updateFeeRecipients(recipients, wrongShares);
+        mainFeeDistributor.updateFeeReceivers(receivers, wrongShares);
     }
 
-    function test_MainFeeDistributor_UpdateFeeRecipients_RevertWhen_CallerNotAuthorized() external {
+    function test_MainFeeDistributor_UpdateFeeReceivers_RevertWhen_CallerNotAuthorized() external {
         vm.startPrank(users.hacker.addr);
         vm.expectRevert(abi.encodeWithSelector(IAccessManaged.AccessManagedUnauthorized.selector, users.hacker.addr));
-        mainFeeDistributor.updateFeeRecipients(recipients, shares);
+        mainFeeDistributor.updateFeeReceivers(receivers, shares);
     }
 }
