@@ -1,46 +1,41 @@
 {
   "name": "@parallel/tokenomics",
+  "description": "Parallel Tokenomics",
   "version": "1.0.0",
-  "license": "MIT",
+  "private": false,
   "scripts": {
+    "compile": "forge build && hardhat compile",
+    "deploy": "npx hardhat deploy",
     "clean": "rm -rf cache out",
-    "build": "forge build && hardhat compile",
+    "build": "forge build",
     "lint": "bun run lint:sol && bun run prettier:check",
-    "lint:sol": "forge fmt --check && bun solhint {script,src,test}/**/*.sol",
+    "lint:sol": "forge fmt --check && bun solhint \"{script,contracts,test}/**/*.sol\"",
     "prettier:check": "prettier --check \"**/*.{json,md,yml}\" --ignore-path \".prettierignore\"",
     "prettier:write": "prettier --write \"**/*.{json,md,yml}\" --ignore-path \".prettierignore\"",
-    "test": "forge test",
+    "test": "forge test -vvv --nmt \"^.*invariant.*$\"",
+    "test:invariant": "forge test --mt \"^.*invariant.*$\"",
+    "test:coverage": "forge coverage --ir-minimum",
+    "test:coverage:report": "forge coverage --ir-minimum --report lcov && lcov --remove lcov.info -o lcov.info \"test/*\" && genhtml lcov.info -o coverage",
     "prepare": "husky",
-    "test:coverage": "forge coverage",
-    "test:coverage:report": "forge coverage --report lcov && genhtml lcov.info --branch-coverage --output-dir coverage"
+    "verify": "npx hardhat etherscan-verify --sleep"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^5.0.1"
+    "@layerzerolabs/lz-evm-oapp-v2": "^3.0.14",
+    "@openzeppelin/contracts": "^5.1.0"
   },
   "devDependencies": {
-    "@commitlint/cli": "^19.3.0",
-    "@commitlint/config-conventional": "^19.2.2",
-    "@nomicfoundation/hardhat-toolbox-viem": "^3.0.0",
-    "@nomicfoundation/hardhat-viem": "^2.0.3",
-    "@types/chai": "4",
-    "@types/mocha": "^10.0.7",
-    "@types/node": "^20.14.10",
-    "chai": "4",
-    "cross-env": "^7.0.3",
+    "@commitlint/cli": "^19.5.0",
+    "@commitlint/config-conventional": "^19.5.0",
+    "@nomicfoundation/hardhat-foundry": "^1.1.2",
+    "@types/fs-extra": "^11.0.4",
     "dotenv": "^16.4.5",
-    "forge-std": "github:foundry-rs/forge-std#v1.8.1",
-    "hardhat": "^2.22.6",
-    "hardhat-deploy": "^0.12.4",
-    "husky": "^9.0.11",
-    "prettier": "^3.0.0",
-    "solhint": "^3.6.2",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.5.3",
-    "viem": "^2.17.3"
-  },
-  "commitlint": {
-    "extends": [
-      "@commitlint/config-conventional"
-    ]
+    "forge-std": "github:foundry-rs/forge-std",
+    "fs-extra": "^11.2.0",
+    "hardhat-contract-sizer": "^2.10.0",
+    "hardhat-deploy": "^0.14.0",
+    "husky": "^9.1.6",
+    "murky": "github:dmfxyz/murky",
+    "prettier": "^3.3.3",
+    "solhint": "^5.0.3"
   }
 }
