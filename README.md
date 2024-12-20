@@ -1,8 +1,36 @@
-# Overview
+# Parallel Tokenomics
 
-This repository contains the source code for contracts and testing suites for all of Parallel's tokenomics architecture.
+## 1. Overview
 
-## Repository Structure
+The Parallel Tokenomics system consists of smart contracts that enable:
+
+- Running Dutch auctions to collect a single fee token that is sent to the chain-specific fee distributor (Auctioneer)
+- Forwarding fees to the main fee distributor on the destination chain (SideChainFeeDistributor)
+- Distributing protocol-generated fees to registered fee receivers (MainFeeDistributor)
+- Staking PRL tokens to earn rewards through:
+  - Single staking (sPRL1): Direct PRL staking with time-lock and rewards
+  - Balancer Pool staking (sPRL2): 80PRL/20WETH pool tokens staked into Aura.finance
+- Distributing rewards to sPRL1/sPRL2 users via off-chain calculations and merkle proofs (RewardMerkleDistributor)
+
+### Key Features
+
+- Time-lock staking mechanism with configurable early withdrawal penalties
+- Dual staking options with different risk-reward profiles
+- Cross-chain fee collection and distribution
+- Merkle-based reward distribution system
+- Integration with Balancer and Aura.finance protocols
+
+### Requirements
+
+- PRL tokens for staking
+- ETH/WETH for sPRL2 liquidity provision
+- Supported networks: [Networks to be added]
+
+The high-level architecture of the protocol is shown below:
+
+![High Level Architecture](./docs/assets/high-level-architecture.png)
+
+## 2. Folder Structure
 
 - [Broadcast](./broadcast) folder contains Foundry transactions executed by scripts.
 - [Contracts](./contracts) folder contains contracts source code.
@@ -13,7 +41,15 @@ This repository contains the source code for contracts and testing suites for al
 - [Test](./test) folder contains all tests related to the contracts with mocks and settings.
 - [Utils](./utils) folder contains helper functions.
 
-## Getting Started
+## 3. Documentation
+
+Additional documentation can be found in the `/docs` directory:
+
+- [Audit Details](docs/AuditDetails.md)
+- [Deployments Contracts](docs/Deployment.md)
+- [Technical Specifications](docs/TechnicalSpecs.md)
+
+## 4. Getting Started
 
 ### Foundry
 
