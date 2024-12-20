@@ -89,7 +89,7 @@ contract MainFeeDistributor is FeeCollectorCore {
     //-------------------------------------------
 
     /// @notice Release the fees to the fee receivers according to their shares.
-    function release() external nonReentrant {
+    function release() external nonReentrant whenNotPaused {
         uint256 income = feeToken.balanceOf(address(this));
         if (income == 0) revert NothingToRelease();
         if (feeReceivers.length == 0) revert NoFeeReceivers();
@@ -101,7 +101,7 @@ contract MainFeeDistributor is FeeCollectorCore {
 
     /// @notice swap Lz-Token to Token if limit not reached.
     /// @dev lzToken doesn't need approval to be swapped.
-    function swapLzToken() external nonReentrant {
+    function swapLzToken() external nonReentrant whenNotPaused {
         uint256 balance = bridgeableToken.balanceOf(address(this));
         if (balance == 0) revert NothingToSwap();
 

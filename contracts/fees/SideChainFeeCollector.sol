@@ -39,6 +39,12 @@ contract SideChainFeeCollector is FeeCollectorCore {
     /// @notice Emitted when the fee token is released.
     event FeeReleased(address caller, uint256 amountSent);
 
+    /// @notice Emitted when the destination receiver address is updated.
+    event DestinationReceiverUpdated(address newDestinationReceiver);
+
+    /// @notice Emitted when the bridgeable token is updated.
+    event BridgeableTokenUpdated(address newBridgeableToken);
+
     //-------------------------------------------
     // Constructor
     //-------------------------------------------
@@ -70,7 +76,7 @@ contract SideChainFeeCollector is FeeCollectorCore {
     /// @notice Release the fee token to the MainFeeDistributor on the receiving chain.
     /// @param _options Options to be passed to the bridgeable token.
     /// @return amountSent The amount of fee token that has been bridged.
-    function release(bytes memory _options) external payable nonReentrant returns (uint256 amountSent) {
+    function release(bytes memory _options) external payable nonReentrant whenNotPaused returns (uint256 amountSent) {
         amountSent = _calcBridgeableAmount();
         if (amountSent == 0) {
             revert NothingToRelease();
@@ -88,6 +94,24 @@ contract SideChainFeeCollector is FeeCollectorCore {
         feeToken.approve(address(bridgeableToken), amountSent);
         emit FeeReleased(msg.sender, amountSent);
         bridgeableToken.send{ value: msg.value }(sendParam, MessagingFee(msg.value, 0), payable(msg.sender));
+    }
+
+    //-------------------------------------------
+    // AccessManaged functions
+    //-------------------------------------------
+
+    /// @notice Update the destination receiver address.
+    /// @param _newDestinationReceiver The new destination receiver address.
+    function updateDestinationReceiver(address _newDestinationReceiver) external restricted {
+        destinationReceiver = _newDestinationReceiver;
+        emit DestinationReceiverUpdated(_newDestinationReceiver);
+    }
+
+    /// @notice Update the bridgeable token.
+    /// @param _newBridgeableToken The new bridgeable token address.
+    function updateBridgeableToken(address _newBridgeableToken) external restricted {
+        bridgeableToken = IOFT(_newBridgeableToken);
+        emit BridgeableTokenUpdated(_newBridgeableToken);
     }
 
     //-------------------------------------------

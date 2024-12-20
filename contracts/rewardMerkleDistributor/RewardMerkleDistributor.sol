@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
+import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import { AccessManaged } from "@openzeppelin/contracts/access/manager/AccessManaged.sol";
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { MerkleProof } from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
@@ -11,7 +12,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 /// @author Cooper Labs
 /// @custom:contact security@cooperlabs.org
 /// @notice Contract to distribute rewards using a merkle tree.
-contract RewardMerkleDistributor is AccessManaged, Pausable {
+contract RewardMerkleDistributor is AccessManaged, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     //-------------------------------------------
@@ -127,7 +128,7 @@ contract RewardMerkleDistributor is AccessManaged, Pausable {
 
     /// @notice Claims rewards for multi Epoch.
     /// @param _claimsData The claim data array info.
-    function claims(ClaimCallData[] calldata _claimsData) external whenNotPaused {
+    function claims(ClaimCallData[] calldata _claimsData) external whenNotPaused nonReentrant {
         uint256 len = _claimsData.length;
         if (len == 0) revert EmptyArray();
         uint256 i;
