@@ -3,6 +3,7 @@ pragma solidity 0.8.25;
 
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import { IERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 import { ERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import { AccessManaged } from "@openzeppelin/contracts/access/manager/AccessManaged.sol";
@@ -17,7 +18,7 @@ import { MathsLib } from "contracts/libraries/MathsLib.sol";
 /// left.
 /// @author Cooper Labs
 /// @custom:contact security@cooperlabs.xyz
-contract TimeLockPenaltyERC20 is ERC20Permit, AccessManaged, Pausable {
+contract TimeLockPenaltyERC20 is ERC20Permit, AccessManaged, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using MathsLib for *;
 
@@ -84,8 +85,9 @@ contract TimeLockPenaltyERC20 is ERC20Permit, AccessManaged, Pausable {
     /// @notice Emitted when a user withdraws assets
     /// @param id The ID of the request
     /// @param user The user that withdrew the assets
-    /// @param amount The amount of assets withdrawn
-    event Withdraw(uint256 id, address user, uint256 amount);
+    /// @param amount The amount of underlying assets withdrawn for the user
+    /// @param slashAmount The amount of underlying assets slashed for the fee receiver
+    event Withdraw(uint256 id, address user, uint256 amount, uint256 slashAmount);
 
     /// @notice Emitted when a user emergency withdraws assets.
     /// @param user The user that withdrew the assets.
@@ -168,7 +170,7 @@ contract TimeLockPenaltyERC20 is ERC20Permit, AccessManaged, Pausable {
 
     /// @notice Deposit assets into the contract and mint the equivalent amount of tokens.
     /// @param _assetAmount The amount of assets to deposit.
-    function deposit(uint256 _assetAmount) external virtual whenNotPaused {
+    function deposit(uint256 _assetAmount) external virtual whenNotPaused nonReentrant {
         underlying.safeTransferFrom(msg.sender, address(this), _assetAmount);
         _deposit(_assetAmount);
     }
@@ -188,6 +190,7 @@ contract TimeLockPenaltyERC20 is ERC20Permit, AccessManaged, Pausable {
     )
         external
         whenNotPaused
+        nonReentrant
     {
         IERC20Permit(address(underlying)).permit(msg.sender, address(this), _assetAmount, _deadline, _v, _r, _s);
         underlying.safeTransferFrom(msg.sender, address(this), _assetAmount);
@@ -196,18 +199,18 @@ contract TimeLockPenaltyERC20 is ERC20Permit, AccessManaged, Pausable {
 
     /// @notice Withdraw assets from the contract.
     /// @param _id The ID of the withdrawal request.
-    function withdraw(uint256 _id) external whenNotPaused {
+    function withdraw(uint256 _id) external whenNotPaused nonReentrant {
         (uint256 amountWithdrawn, uint256 feeAmount) = _withdraw(_id);
         unlockingAssets = unlockingAssets - amountWithdrawn - feeAmount;
         if (feeAmount > 0) {
-            _mint(feeReceiver, feeAmount);
+            underlying.safeTransfer(feeReceiver, feeAmount);
         }
-        underlying.transfer(msg.sender, amountWithdrawn);
+        underlying.safeTransfer(msg.sender, amountWithdrawn);
     }
 
     /// @notice Withdraw multiple withdrawal requests.
     /// @param _ids The IDs of the withdrawal requests to withdraw.
-    function withdrawMultiple(uint256[] calldata _ids) external whenNotPaused {
+    function withdrawMultiple(uint256[] calldata _ids) external whenNotPaused nonReentrant {
         uint256 totalAmountWithdrawn;
         uint256 totalFeeAmount;
         uint256 i = 0;
@@ -218,18 +221,18 @@ contract TimeLockPenaltyERC20 is ERC20Permit, AccessManaged, Pausable {
         }
         unlockingAssets = unlockingAssets - totalAmountWithdrawn - totalFeeAmount;
         if (totalFeeAmount > 0) {
-            _mint(feeReceiver, totalFeeAmount);
+            underlying.safeTransfer(feeReceiver, totalFeeAmount);
         }
-        underlying.transfer(msg.sender, totalAmountWithdrawn);
+        underlying.safeTransfer(msg.sender, totalAmountWithdrawn);
     }
 
     /// @notice Allow users to emergency withdraw assets without penalties.
     /// @dev This function can only be called when the contract is paused.
     /// @param _unlockingAmount The amount of assets to unlock.
-    function emergencyWithdraw(uint256 _unlockingAmount) external whenPaused {
+    function emergencyWithdraw(uint256 _unlockingAmount) external whenPaused nonReentrant {
         _burn(msg.sender, _unlockingAmount);
         emit EmergencyWithdraw(msg.sender, _unlockingAmount);
-        underlying.transfer(msg.sender, _unlockingAmount);
+        underlying.safeTransfer(msg.sender, _unlockingAmount);
     }
 
     /// @notice Request to withdraw assets from the contract.
@@ -377,7 +380,7 @@ contract TimeLockPenaltyERC20 is ERC20Permit, AccessManaged, Pausable {
         withdrawAmount = request.amount - slashAmount;
         request.status = WITHDRAW_STATUS.RELEASED;
 
-        emit Withdraw(_id, msg.sender, withdrawAmount);
+        emit Withdraw(_id, msg.sender, withdrawAmount, slashAmount);
     }
 
     /// @notice Cancel a withdrawal request.

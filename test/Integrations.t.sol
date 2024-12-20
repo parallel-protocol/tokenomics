@@ -51,7 +51,7 @@ abstract contract Integrations_Test is Base_Test {
         );
 
         sprl2 = _deploySPRL2(
-            address(bpt),
+            address(auraBpt),
             users.daoTreasury.addr,
             address(accessManager),
             DEFAULT_PENALTY_PERCENTAGE,

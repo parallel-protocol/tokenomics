@@ -4,8 +4,9 @@ pragma solidity 0.8.25;
 import { TimeLockPenaltyERC20, IERC20, ERC20, IERC20Permit, ERC20Permit } from "./TimeLockPenaltyERC20.sol";
 import { Nonces } from "@openzeppelin/contracts/utils/Nonces.sol";
 import { Address } from "@openzeppelin/contracts/utils/Address.sol";
-
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ERC20Votes } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
+
 import { IBalancerVault } from "contracts/interfaces/IBalancerV3Vault.sol";
 import {
     IAuraBoosterLite,
@@ -17,6 +18,7 @@ import { IWrappedNative } from "contracts/interfaces/IWrappedNative.sol";
 
 contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
     using Address for address payable;
+    using SafeERC20 for IERC20;
 
     string constant NAME = "Stake 20WETH-80PRL Aura Deposit Vault";
     string constant SYMBOL = "sPRL2";
@@ -90,9 +92,6 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
     /// @notice Error thrown when the deposit fails.
     error DepositFailed();
 
-    /// @notice Error thrown when the insufficient assets are received.
-    error InsufficientAssetsReceived();
-
     //-------------------------------------------
     // Constructor
     //-------------------------------------------
@@ -163,6 +162,7 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
         bytes32 _s
     )
         external
+        whenNotPaused
         returns (uint256[] memory amountsIn, uint256 bptAmount)
     {
         IERC20Permit(address(PRL)).permit(msg.sender, address(this), _maxPrlAmount, _deadline, _v, _r, _s);
@@ -192,6 +192,7 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
     )
         external
         payable
+        whenNotPaused
         returns (uint256[] memory amountsIn, uint256 bptAmount)
     {
         IERC20Permit(address(PRL)).permit(msg.sender, address(this), _maxPrlAmount, _deadline, _v, _r, _s);
@@ -220,9 +221,9 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
         (uint256 bptAmount, uint256 slashBptAmount) = _withdraw(_requestId);
         (prlAmount, wethAmount) = _exitPool(bptAmount, _minPrlAmount, _minWethAmount);
 
-        // Mint the slash amount of BPT to the fee receiver
+        // Transfer the slash amount of auraBPT to the fee receiver
         if (slashBptAmount > 0) {
-            _mint(feeReceiver, slashBptAmount);
+            underlying.safeTransfer(feeReceiver, slashBptAmount);
         }
 
         emit WithdrawlPRLAndWeth(_requestId, msg.sender, prlAmount, wethAmount, slashBptAmount);
@@ -254,9 +255,9 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
 
         (prlAmount, wethAmount) = _exitPool(totalBptAmount, _minPrlAmount, _minWethAmount);
 
-        // Mint the slash amount of BPT to the fee receiver
+        // Transfer the slash amount of auraBPT to the fee receiver
         if (totalSlashBptAmount > 0) {
-            _mint(feeReceiver, totalSlashBptAmount);
+            underlying.safeTransfer(feeReceiver, totalSlashBptAmount);
         }
 
         emit WithdrawlPRLAndWethMultiple(_requestIds, msg.sender, prlAmount, wethAmount, totalSlashBptAmount);
@@ -280,9 +281,10 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
     {
         (uint256 bptAmount, uint256 slashBptAmount) = _withdraw(_requestId);
         (prlAmount, ethAmount) = _exitPool(bptAmount, _minPrlAmount, _minEthAmount);
-        // Mint the slash amount of BPT to the fee receiver
+
+        // Transfer the slash amount of auraBPT to the fee receiver
         if (slashBptAmount > 0) {
-            _mint(feeReceiver, slashBptAmount);
+            underlying.safeTransfer(feeReceiver, slashBptAmount);
         }
 
         emit WithdrawlPRLAndEth(_requestId, msg.sender, prlAmount, ethAmount, slashBptAmount);
@@ -316,9 +318,9 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
 
         (prlAmount, ethAmount) = _exitPool(totalBptAmount, _minPrlAmount, _minEthAmount);
 
-        // Mint the slash amount of BPT to the fee receiver
+        // Transfer the slash amount of auraBPT to the fee receiver
         if (totalSlashBptAmount > 0) {
-            _mint(feeReceiver, totalSlashBptAmount);
+            underlying.safeTransfer(feeReceiver, totalSlashBptAmount);
         }
 
         emit WithdrawlPRLAndEthMultiple(_requestIds, msg.sender, prlAmount, ethAmount, totalSlashBptAmount);
@@ -431,6 +433,7 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
     }
 
     /// @notice Exit the pool.
+    /// @dev Balancer V3 will revert if the amount of tokens received is less than the minimum expected.
     /// @param _bptAmount The amount of BPT to withdraw.
     /// @param _minPrlAmount The minimum amount of PRL to receive.
     /// @param _minWethAmount The minimum amount of WETH to receive.
@@ -468,10 +471,6 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
 
         _prlAmount = PRL.balanceOf(address(this));
         _wethAmount = WETH.balanceOf(address(this));
-
-        if (_prlAmount < _minPrlAmount || _wethAmount < _minWethAmount) {
-            revert InsufficientAssetsReceived();
-        }
     }
 
     //-------------------------------------------

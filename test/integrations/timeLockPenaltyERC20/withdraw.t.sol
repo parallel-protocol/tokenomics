@@ -47,24 +47,21 @@ contract TimeLockPenaltyERC20_Withdraw_Integrations_Test is Integrations_Test {
         assertEq(aliceBalanceAfter - aliceBalanceBefore, expectedFee);
 
         uint256 contractBalanceAfter = prl.balanceOf(address(timeLockPenaltyERC20));
-        assertEq(contractBalanceBefore - contractBalanceAfter, expectedFee);
-
-        assertEq(timeLockPenaltyERC20.balanceOf(users.daoTreasury.addr), expectedFee);
+        assertEq(contractBalanceBefore - contractBalanceAfter, WITHDRAW_AMOUNT);
+        assertEq(prl.balanceOf(users.daoTreasury.addr), expectedFee);
     }
 
     function test_TimeLockPenaltyERC20_Withdraw_AtRequestTime() external requestSingleWithdraw {
         uint256 aliceBalanceBefore = prl.balanceOf(users.alice.addr);
-        uint256 contractBalanceBefore = prl.balanceOf(address(timeLockPenaltyERC20));
 
         timeLockPenaltyERC20.withdraw(0);
 
         uint256 aliceBalanceAfter = prl.balanceOf(users.alice.addr);
-        assertEq(aliceBalanceAfter - aliceBalanceBefore, 0);
+        assertEq(aliceBalanceAfter, aliceBalanceBefore);
 
-        uint256 contractBalanceAfter = prl.balanceOf(address(timeLockPenaltyERC20));
-        assertEq(contractBalanceBefore - contractBalanceAfter, 0);
-
-        assertEq(timeLockPenaltyERC20.balanceOf(users.daoTreasury.addr), WITHDRAW_AMOUNT);
+        assertEq(prl.balanceOf(address(timeLockPenaltyERC20)), INITIAL_BALANCE - WITHDRAW_AMOUNT);
+        assertEq(timeLockPenaltyERC20.totalSupply(), INITIAL_BALANCE - WITHDRAW_AMOUNT);
+        assertEq(prl.balanceOf(users.daoTreasury.addr), WITHDRAW_AMOUNT);
     }
 
     function test_TimeLockPenaltyERC20_Withdraw_RevertWhen_StatusNotUnlocking() external {
@@ -109,17 +106,14 @@ contract TimeLockPenaltyERC20_Withdraw_Integrations_Test is Integrations_Test {
         requestIds[2] = 2;
         uint256 expectedAmount = (WITHDRAW_AMOUNT * 3) / 2;
         uint256 aliceBalanceBefore = prl.balanceOf(users.alice.addr);
-        uint256 contractBalanceBefore = prl.balanceOf(address(timeLockPenaltyERC20));
 
         timeLockPenaltyERC20.withdrawMultiple(requestIds);
 
         uint256 aliceBalanceAfter = prl.balanceOf(users.alice.addr);
         assertEq(aliceBalanceAfter - aliceBalanceBefore, expectedAmount);
 
-        uint256 contractBalanceAfter = prl.balanceOf(address(timeLockPenaltyERC20));
-        assertEq(contractBalanceBefore - contractBalanceAfter, expectedAmount);
-
-        assertEq(timeLockPenaltyERC20.balanceOf(users.daoTreasury.addr), expectedAmount);
+        assertEq(prl.balanceOf(address(timeLockPenaltyERC20)), INITIAL_BALANCE - (WITHDRAW_AMOUNT * 3));
+        assertEq(prl.balanceOf(users.daoTreasury.addr), expectedAmount);
     }
 
     function test_TimeLockPenaltyERC20_WithdrawMultiple_AtRequestTime() external requestMultiWithdraw {
@@ -128,17 +122,14 @@ contract TimeLockPenaltyERC20_Withdraw_Integrations_Test is Integrations_Test {
         requestIds[1] = 1;
         requestIds[2] = 2;
         uint256 aliceBalanceBefore = prl.balanceOf(users.alice.addr);
-        uint256 contractBalanceBefore = prl.balanceOf(address(timeLockPenaltyERC20));
 
         timeLockPenaltyERC20.withdrawMultiple(requestIds);
 
         uint256 aliceBalanceAfter = prl.balanceOf(users.alice.addr);
-        assertEq(aliceBalanceAfter - aliceBalanceBefore, 0);
+        assertEq(aliceBalanceAfter, aliceBalanceBefore);
 
-        uint256 contractBalanceAfter = prl.balanceOf(address(timeLockPenaltyERC20));
-        assertEq(contractBalanceBefore - contractBalanceAfter, 0);
-
-        assertEq(timeLockPenaltyERC20.balanceOf(users.daoTreasury.addr), WITHDRAW_AMOUNT * 3);
+        assertEq(prl.balanceOf(address(timeLockPenaltyERC20)), INITIAL_BALANCE - WITHDRAW_AMOUNT * 3);
+        assertEq(prl.balanceOf(users.daoTreasury.addr), WITHDRAW_AMOUNT * 3);
     }
 
     modifier PauseContract() {
