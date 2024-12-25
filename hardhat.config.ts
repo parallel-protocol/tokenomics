@@ -49,10 +49,15 @@ const config: HardhatUserConfig = {
       url: getRpcURL("sepolia"),
       verify: getVerifyConfig("sepolia"),
     },
-    polygon_amoy: {
+    arbiSepolia: {
       accounts,
-      url: getRpcURL("polygon_amoy"),
-      verify: getVerifyConfig("polygon_amoy"),
+      url: getRpcURL("arbiSepolia"),
+      verify: getVerifyConfig("arbiSepolia"),
+    },
+    polygon: {
+      accounts,
+      url: getRpcURL("polygon"),
+      verify: getVerifyConfig("polygon"),
     },
   },
   namedAccounts: {

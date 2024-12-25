@@ -26,6 +26,7 @@
   "devDependencies": {
     "@commitlint/cli": "^19.5.0",
     "@commitlint/config-conventional": "^19.5.0",
+    "@layerzerolabs/lz-definitions": "^3.0.36",
     "@nomicfoundation/hardhat-foundry": "^1.1.2",
     "@types/fs-extra": "^11.0.4",
     "dotenv": "^16.4.5",
