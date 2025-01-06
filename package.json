@@ -30,7 +30,7 @@
     "@nomicfoundation/hardhat-foundry": "^1.1.2",
     "@types/fs-extra": "^11.0.4",
     "dotenv": "^16.4.5",
-    "forge-std": "github:foundry-rs/forge-std",
+    "forge-std": "github:foundry-rs/forge-std#v1.9.5",
     "fs-extra": "^11.2.0",
     "hardhat-contract-sizer": "^2.10.0",
     "hardhat-deploy": "^0.14.0",
