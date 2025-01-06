@@ -167,6 +167,7 @@ contract RewardMerkleDistributor is AccessManaged, Pausable, ReentrancyGuard {
             totalExpiredRewards += _getEpochExpiredRewards(_epochIds[i]);
         }
     }
+
     //-------------------------------------------
     // AccessManaged Functions
     //-------------------------------------------
