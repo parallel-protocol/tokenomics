@@ -62,10 +62,11 @@ contract RewardMerkleDistributor is AccessManaged, Pausable, ReentrancyGuard {
     /// @param endTime The time at which all none claimed token will be send to the expiredRewardsRecipient address.
     event MerkleDropUpdated(uint64 epochId, bytes32 root, uint256 totalAmount, uint64 startTime, uint64 endTime);
 
-    /// @notice Emitted when tokens are withdrawn.
+    /// @notice Emitted when tokens are rescued.
+    /// @param token The address of the token.
     /// @param to The address of the recipient.
-    /// @param amount The amount of tokens withdrawn.
-    event Rescue(address to, uint256 amount);
+    /// @param amount The amount of tokens rescued.
+    event EmergencyRescued(address token, address to, uint256 amount);
 
     /// @notice Emitted when an account claims rewards.
     /// @param epochId The epochId claimed.
@@ -182,15 +183,13 @@ contract RewardMerkleDistributor is AccessManaged, Pausable, ReentrancyGuard {
         );
     }
 
-    /// @notice Withdraws tokens to a recipient.
-    /// @dev This function can only be called by AccessManager.
+    /// @notice Allow to rescue tokens own by the contract.
+    /// @param _token The address of the token.
     /// @param _to The address of the recipient.
-    /// @param _amount The amount of tokens to transfer.
-    function rescueTokens(address _to, uint256 _amount) external restricted whenPaused {
-        uint256 tokenBalance = TOKEN.balanceOf(address(this));
-        _amount = tokenBalance < _amount ? tokenBalance : _amount;
-        TOKEN.safeTransfer(_to, _amount);
-        emit Rescue(_to, _amount);
+    /// @param _amount The amount of tokens to rescue.
+    function emergencyRescue(address _token, address _to, uint256 _amount) external restricted whenPaused {
+        emit EmergencyRescued(_token, _to, _amount);
+        IERC20(_token).safeTransfer(_to, _amount);
     }
 
     /// @notice Update the recipient address that will receive expired rewards.

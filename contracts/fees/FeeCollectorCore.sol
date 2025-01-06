@@ -24,6 +24,16 @@ abstract contract FeeCollectorCore is AccessManaged, Pausable, ReentrancyGuard {
     IERC20 public immutable feeToken;
 
     //-------------------------------------------
+    // Events
+    //-------------------------------------------
+
+    /// @notice Emitted when tokens are rescued.
+    /// @param token The address of the token.
+    /// @param to The address of the recipient.
+    /// @param amount The amount of tokens rescued.
+    event EmergencyRescued(address token, address to, uint256 amount);
+
+    //-------------------------------------------
     // Errors
     //-------------------------------------------
 
@@ -45,12 +55,12 @@ abstract contract FeeCollectorCore is AccessManaged, Pausable, ReentrancyGuard {
     // AccessManaged functions
     //-------------------------------------------
 
-    /// @notice Allow to withdraw token own by the contract.
-    /// @dev This function can only be called by the accessManager.
+    /// @notice Allow to rescue tokens own by the contract.
     /// @param _token The address of the ERC20 token to rescue.
     /// @param _to The address of the receiver.
     /// @param _amount The amount of tokens to rescue.
-    function recoverToken(address _token, uint256 _amount, address _to) external restricted {
+    function emergencyRescue(address _token, address _to, uint256 _amount) external restricted whenPaused {
+        emit EmergencyRescued(_token, _to, _amount);
         IERC20(_token).safeTransfer(_to, _amount);
     }
 

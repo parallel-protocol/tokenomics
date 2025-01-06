@@ -120,7 +120,7 @@ contracts. All the functions are restricted to the AccessManager.
 
 **function details**:
 
-- `recoverToken(address _token, uint256 _amount, address _to)` | **Restricted** : Allow to rescue tokens from the
+- `emergencyRescue(address _token, address _to, uint256 _amount)` | **Restricted** : Allow to rescue tokens from the
   contract.
 - `pause()` | **Restricted** : Allow to pause the contract.
 - `unpause()` | **Restricted** : Allow to unpause the contract.
@@ -162,7 +162,7 @@ price and duration that will be used to calculate the price of the auction.
 
 - `buy(address[] calldata _assets, address _assetsReceiver, uint256 _epochId, uint256 _maxPaymentTokenAmount)` |
   **Permissionless** : Allow to buy assets by transferring payment tokens and receiving the assets.
-- `recoverToken(address _token, uint256 _amount, address _to)` | **Restricted** : Allow to rescue tokens from the
+- `emergencyRescue(address _token, address _to, uint256 _amount)` | **Restricted** : Allow to rescue tokens from the
   contract.
 - `updatePaymentToken(address _newPaymentToken)` | **Restricted** : Allow change the payment token expected to receive.
 - `updatePaymentReceiver(address _newPaymentReceiver)` | **Restricted** : Allow change the destination receiver of the
@@ -178,10 +178,10 @@ This section contains the contracts related to the staking part of the protocol.
 
 #### 4.2.1 [TimeLockPenaltyERC20](../contracts/sPRL/TimeLockPenaltyERC20.sol)
 
-This abstract contract is used to handle commun logic between sPRL1 and sPRL2. The main feature of it it's to deposit a
+This abstract contract is used to handle commun logic between sPRL1 and sPRL2. The main feature of it, it's to deposit a
 specific ERC20 and apply a lock time duration for withdrawals. Users is also able to withdraw their tokens before the
-lock time but will be penalized by a penalty percentage on the withdraw amount that is calculated based on the time left
-before the lock time.
+lock time but will be penalized by a penalty fee on the withdraw amount that is calculated based on the time left before
+the lock time.
 
 **Parameters**:
 
@@ -204,7 +204,6 @@ before the lock time.
 - `cancelWithdrawalRequest(uint256 _id)` | **Permissionless** : Allow to cancel a withdrawal request.
 - `cancelMultipleWithdrawalRequests(uint256[] calldata _ids)` | **Permissionless** : Allow to cancel multiple withdrawal
   requests.
-- `rescueTokens(address _to, uint256 _amount)` | **Restricted** : Allow to rescue tokens from the contract.
 - `updateTimeLockDuration(uint64 _newTimeLockDuration)` | **Restricted** : Allow to update the time lock duration.
 - `updateStartPenaltyPercentage(uint256 _newStartPenaltyPercentage)` | **Restricted** : Allow to update the start
   penalty percentage.
@@ -262,8 +261,9 @@ the protocol.
   the expiredRewardsRecipient.
 - `updateMerkleDrop(uint64 _epoch, MerkleDrop memory _merkleDrop)` | **Restricted** : Allow to update the merkle drop
   for a specific epoch.
-- `rescueTokens(address _to, uint256 _amount)` | **Restricted** : Allow to rescue tokens from the contract.
 - `updateExpiredRewardsRecipient(address _newExpiredRewardsRecipient)` | **Restricted** : Allow to update the
   destination receiver of the expired rewards.
+- `emergencyRescue(address _token, address _to, uint256 _amount)` | **Restricted** : Allow to rescue tokens from the
+  contract.
 - `pause()` | **Restricted** : Allow to pause the contract.
 - `unpause()` | **Restricted** : Allow to unpause the contract.

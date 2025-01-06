@@ -66,6 +66,12 @@ contract Auctioneer is AccessManaged, Pausable {
     /// @param paymentAmount the amount paid by the buyer.
     event Buy(address buyer, address assetsReceiver, uint256 paymentAmount);
 
+    /// @notice Emitted when tokens are rescued.
+    /// @param token The address of the token.
+    /// @param to The address of the recipient.
+    /// @param amount The amount of tokens rescued.
+    event EmergencyRescued(address token, address to, uint256 amount);
+
     /// @notice Event emitted when the payment token has been updated.
     /// @param newPaymentToken the new payment token address.
     event PaymentTokenUpdated(address newPaymentToken);
@@ -255,12 +261,13 @@ contract Auctioneer is AccessManaged, Pausable {
     // AccessManaged functions
     //-------------------------------------------
 
-    /// @notice Allow to withdraw token own by the contract.
+    /// @notice Allow to rescue token own by the contract.
     /// @dev This function can only be called by the accessManager.
     /// @param _token The address of the ERC20 token to rescue.
     /// @param _to The address of the receiver.
     /// @param _amount The amount of tokens to rescue.
-    function recoverToken(address _token, uint256 _amount, address _to) external restricted {
+    function emergencyRescue(address _token, address _to, uint256 _amount) external restricted whenPaused {
+        emit EmergencyRescued(_token, _to, _amount);
         IERC20(_token).safeTransfer(_to, _amount);
     }
 

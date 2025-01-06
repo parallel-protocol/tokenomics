@@ -57,6 +57,7 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
     event WithdrawlPRLAndWeth(
         uint256 requestId, address user, uint256 prlAmount, uint256 wethAmount, uint256 slashBptAmount
     );
+
     /// @notice Event emitted when a user withdraws PRL and WETH for multiple requests.
     /// @param requestIds The IDs of the withdrawal requests.
     /// @param user The address of the user.
@@ -66,6 +67,7 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
     event WithdrawlPRLAndWethMultiple(
         uint256[] requestIds, address user, uint256 prlAmount, uint256 wethAmount, uint256 slashBptAmount
     );
+
     /// @notice Event emitted when a user withdraws PRL and ETH.
     /// @param requestId The ID of the withdrawal request.
     /// @param user The address of the user.
@@ -75,6 +77,7 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
     event WithdrawlPRLAndEth(
         uint256 requestId, address user, uint256 prlAmount, uint256 ethAmount, uint256 slashBptAmount
     );
+
     /// @notice Event emitted when a user withdraws PRL and ETH for multiple requests.
     /// @param requestIds The IDs of the withdrawal requests.
     /// @param user The address of the user.
