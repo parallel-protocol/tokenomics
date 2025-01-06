@@ -36,9 +36,13 @@ contract MainFeeDistributor is FeeCollectorCore {
     event FeeReceiverAdded(address feeReceiver, uint256 shares);
 
     /// @notice Emitted when fees are released.
+    /// @param feeReceiver The address of the fee receiver.
     /// @param income The amount of income released.
-    /// @param releasedAt The timestamp when the fees were released.
-    event FeeReleased(uint256 income, uint256 releasedAt);
+    event FeeReleasedTo(address feeReceiver, uint256 income);
+
+    /// @notice Emitted when the bridgeable token is updated.
+    /// @param newBridgeableToken The address of the new bridgeable token.
+    event BridgeableTokenUpdated(address newBridgeableToken);
 
     /// @notice Emitted when lzToken are swapped.
     /// @param amount The amount of lzToken swapped.
@@ -110,9 +114,8 @@ contract MainFeeDistributor is FeeCollectorCore {
 
         uint256 swapAmount = balance > maxSwapAmount ? maxSwapAmount : balance;
 
-        IBridgeableToken(address(bridgeableToken)).swapLzTokenToPrincipalToken(swapAmount);
-
         emit LzTokenSwapped(swapAmount);
+        IBridgeableToken(address(bridgeableToken)).swapLzTokenToPrincipalToken(swapAmount);
     }
 
     /// @notice Get the addresses that will receive fees.
@@ -147,6 +150,7 @@ contract MainFeeDistributor is FeeCollectorCore {
     function updateBridgeableToken(address _newBridgeableToken) external restricted {
         if (bridgeableToken.balanceOf(address(this)) > 0) revert NeedToSwapAllLzTokenFirst();
         bridgeableToken = IERC20(_newBridgeableToken);
+        emit BridgeableTokenUpdated(_newBridgeableToken);
     }
 
     //-------------------------------------------
@@ -158,6 +162,7 @@ contract MainFeeDistributor is FeeCollectorCore {
     /// @param _feeReceiver The address of the fee receiver.
     function _release(uint256 _totalIncomeToDistribute, address _feeReceiver) internal {
         uint256 amount = _totalIncomeToDistribute * shares[_feeReceiver] / totalShares;
+        emit FeeReleasedTo(_feeReceiver, amount);
         feeToken.safeTransfer(_feeReceiver, amount);
     }
 
