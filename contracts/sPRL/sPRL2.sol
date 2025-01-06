@@ -48,44 +48,14 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
     // Events
     //-------------------------------------------
 
-    /// @notice Event emitted when a user withdraws PRL and WETH.
-    /// @param requestId The ID of the withdrawal request.
-    /// @param user The address of the user.
-    /// @param prlAmount The amount of PRL received.
-    /// @param wethAmount The amount of WETH received.
-    /// @param slashBptAmount The amount of BPT sent to the fee receiver.
-    event WithdrawlPRLAndWeth(
-        uint256 requestId, address user, uint256 prlAmount, uint256 wethAmount, uint256 slashBptAmount
-    );
-
     /// @notice Event emitted when a user withdraws PRL and WETH for multiple requests.
     /// @param requestIds The IDs of the withdrawal requests.
     /// @param user The address of the user.
     /// @param prlAmount The amount of PRL received.
     /// @param wethAmount The amount of WETH received.
     /// @param slashBptAmount The amount of BPT sent to the fee receiver.
-    event WithdrawlPRLAndWethMultiple(
+    event WithdrawlPRLAndWeth(
         uint256[] requestIds, address user, uint256 prlAmount, uint256 wethAmount, uint256 slashBptAmount
-    );
-
-    /// @notice Event emitted when a user withdraws PRL and ETH.
-    /// @param requestId The ID of the withdrawal request.
-    /// @param user The address of the user.
-    /// @param prlAmount The amount of PRL received.
-    /// @param ethAmount The amount of ETH received.
-    /// @param slashBptAmount The amount of BPT sent to the fee receiver.
-    event WithdrawlPRLAndEth(
-        uint256 requestId, address user, uint256 prlAmount, uint256 ethAmount, uint256 slashBptAmount
-    );
-
-    /// @notice Event emitted when a user withdraws PRL and ETH for multiple requests.
-    /// @param requestIds The IDs of the withdrawal requests.
-    /// @param user The address of the user.
-    /// @param prlAmount The amount of PRL received.
-    /// @param ethAmount The amount of ETH received.
-    /// @param slashBptAmount The amount of BPT sent to the fee receiver.
-    event WithdrawlPRLAndEthMultiple(
-        uint256[] requestIds, address user, uint256 prlAmount, uint256 ethAmount, uint256 slashBptAmount
     );
 
     //-------------------------------------------
@@ -207,40 +177,13 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
         _deposit(bptAmount);
     }
 
-    /// @notice Withdraw PRL and WETH for a single request.
-    /// @param _requestId The request ID to withdraw from.
-    /// @param _minPrlAmount The minimum amount of PRL to receive.
-    /// @param _minWethAmount The minimum amount of WETH to receive.
-    /// @return prlAmount The amount of PRL received.
-    /// @return wethAmount The amount of WETH received.
-    function withdrawPRLAndWeth(
-        uint256 _requestId,
-        uint256 _minPrlAmount,
-        uint256 _minWethAmount
-    )
-        external
-        returns (uint256 prlAmount, uint256 wethAmount)
-    {
-        (uint256 bptAmount, uint256 slashBptAmount) = _withdraw(_requestId);
-        (prlAmount, wethAmount) = _exitPool(bptAmount, _minPrlAmount, _minWethAmount);
-
-        // Transfer the slash amount of auraBPT to the fee receiver
-        if (slashBptAmount > 0) {
-            underlying.safeTransfer(feeReceiver, slashBptAmount);
-        }
-
-        emit WithdrawlPRLAndWeth(_requestId, msg.sender, prlAmount, wethAmount, slashBptAmount);
-        PRL.transfer(msg.sender, prlAmount);
-        WETH.transfer(msg.sender, wethAmount);
-    }
-
     /// @notice Withdraw PRL and WETH for multiple requests.
     /// @param _requestIds The request IDs to withdraw from.
     /// @param _minPrlAmount The minimum amount of PRL to receive.
     /// @param _minWethAmount The minimum amount of WETH to receive.
     /// @return prlAmount The amount of PRL received.
     /// @return wethAmount The amount of WETH received.
-    function withdrawPRLAndWethMultiple(
+    function withdrawPRLAndWeth(
         uint256[] calldata _requestIds,
         uint256 _minPrlAmount,
         uint256 _minWethAmount
@@ -263,74 +206,9 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
             underlying.safeTransfer(feeReceiver, totalSlashBptAmount);
         }
 
-        emit WithdrawlPRLAndWethMultiple(_requestIds, msg.sender, prlAmount, wethAmount, totalSlashBptAmount);
+        emit WithdrawlPRLAndWeth(_requestIds, msg.sender, prlAmount, wethAmount, totalSlashBptAmount);
         PRL.transfer(msg.sender, prlAmount);
         WETH.transfer(msg.sender, wethAmount);
-    }
-
-    /// @notice Withdraw PRL and ETH for a single request.
-    /// @param _requestId The request ID to withdraw from.
-    /// @param _minPrlAmount The minimum amount of PRL to receive.
-    /// @param _minEthAmount The minimum amount of ETH to receive.
-    /// @return prlAmount The amount of PRL received.
-    /// @return ethAmount The amount of ETH received.
-    function withdrawPRLAndEth(
-        uint256 _requestId,
-        uint256 _minPrlAmount,
-        uint256 _minEthAmount
-    )
-        external
-        returns (uint256 prlAmount, uint256 ethAmount)
-    {
-        (uint256 bptAmount, uint256 slashBptAmount) = _withdraw(_requestId);
-        (prlAmount, ethAmount) = _exitPool(bptAmount, _minPrlAmount, _minEthAmount);
-
-        // Transfer the slash amount of auraBPT to the fee receiver
-        if (slashBptAmount > 0) {
-            underlying.safeTransfer(feeReceiver, slashBptAmount);
-        }
-
-        emit WithdrawlPRLAndEth(_requestId, msg.sender, prlAmount, ethAmount, slashBptAmount);
-        PRL.transfer(msg.sender, prlAmount);
-
-        WETH.withdraw(ethAmount);
-        payable(msg.sender).sendValue(ethAmount);
-    }
-
-    /// @notice Withdraw PRL and ETH for multiple requests.
-    /// @param _requestIds The request IDs to withdraw from.
-    /// @param _minPrlAmount The minimum amount of PRL to receive.
-    /// @param _minEthAmount The minimum amount of ETH to receive.
-    /// @return prlAmount The amount of PRL received.
-    /// @return ethAmount The amount of ETH received.
-    function withdrawPRLAndEthMultiple(
-        uint256[] calldata _requestIds,
-        uint256 _minPrlAmount,
-        uint256 _minEthAmount
-    )
-        external
-        returns (uint256 prlAmount, uint256 ethAmount)
-    {
-        uint256 totalBptAmount;
-        uint256 totalSlashBptAmount;
-        for (uint8 i; i < _requestIds.length; i++) {
-            (uint256 bptAmount, uint256 slashBptAmount) = _withdraw(_requestIds[i]);
-            totalBptAmount += bptAmount;
-            totalSlashBptAmount += slashBptAmount;
-        }
-
-        (prlAmount, ethAmount) = _exitPool(totalBptAmount, _minPrlAmount, _minEthAmount);
-
-        // Transfer the slash amount of auraBPT to the fee receiver
-        if (totalSlashBptAmount > 0) {
-            underlying.safeTransfer(feeReceiver, totalSlashBptAmount);
-        }
-
-        emit WithdrawlPRLAndEthMultiple(_requestIds, msg.sender, prlAmount, ethAmount, totalSlashBptAmount);
-        PRL.transfer(msg.sender, prlAmount);
-
-        WETH.withdraw(ethAmount);
-        payable(msg.sender).sendValue(ethAmount);
     }
 
     /// @notice Claim rewards from Aura Pool and transfer them to the fee receiver.

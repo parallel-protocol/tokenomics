@@ -28,74 +28,19 @@ contract SPRL2_Withdraw_Integrations_Test is Integrations_Test {
         _;
     }
 
-    function test_sPRL2_WithdrawPRLAndWeth() external requestSingleWithdraw {
+    function test_sPRL2_WithdrawPRLAndWeth_SingleRequest() external requestSingleWithdraw {
         assertEq(sprl2.balanceOf(users.alice.addr), INITIAL_AMOUNT - WITHDRAW_AMOUNT);
         skip(sprl2.timeLockDuration());
 
         uint256 alicePrlBalanceBefore = prl.balanceOf(users.alice.addr);
         uint256 aliceWethBalanceBefore = weth.balanceOf(users.alice.addr);
 
-        sprl2.withdrawPRLAndWeth(0, INITIAL_AMOUNT, INITIAL_AMOUNT);
+        uint256[] memory requestIds = new uint256[](1);
+        requestIds[0] = 0;
+        sprl2.withdrawPRLAndWeth(requestIds, INITIAL_AMOUNT, INITIAL_AMOUNT);
 
         assertEq(prl.balanceOf(users.alice.addr), alicePrlBalanceBefore + INITIAL_AMOUNT);
         assertEq(weth.balanceOf(users.alice.addr), aliceWethBalanceBefore + INITIAL_AMOUNT);
-    }
-
-    function test_sPRL2_WithdrawPRLAndEth() external requestSingleWithdraw {
-        assertEq(sprl2.balanceOf(users.alice.addr), INITIAL_AMOUNT - WITHDRAW_AMOUNT);
-        skip(sprl2.timeLockDuration());
-
-        uint256 alicePrlBalanceBefore = prl.balanceOf(users.alice.addr);
-        uint256 aliceWethBalanceBefore = weth.balanceOf(users.alice.addr);
-        uint256 aliceEthBalanceBefore = users.alice.addr.balance;
-
-        sprl2.withdrawPRLAndEth(0, INITIAL_AMOUNT, INITIAL_AMOUNT);
-
-        assertEq(prl.balanceOf(users.alice.addr), alicePrlBalanceBefore + INITIAL_AMOUNT);
-        assertEq(weth.balanceOf(users.alice.addr), aliceWethBalanceBefore);
-        assertEq(users.alice.addr.balance, aliceEthBalanceBefore + INITIAL_AMOUNT);
-    }
-
-    function test_sPRL2_WithdrawPRLAndWeth_BeforeUnLockTimeShouldSendUnderlyingTokenToFeeReceiver()
-        external
-        requestSingleWithdraw
-    {
-        skip(timeLockPenaltyERC20.timeLockDuration() / 2);
-        uint256 expectedAmountAliceReceived = WITHDRAW_AMOUNT / 2;
-        uint256 expectedAmountFeeReceiverReceived = WITHDRAW_AMOUNT / 2;
-        uint256 alicePrlBalanceBefore = prl.balanceOf(users.alice.addr);
-        uint256 aliceWethBalanceBefore = weth.balanceOf(users.alice.addr);
-        uint256 aliceEthBalanceBefore = users.alice.addr.balance;
-
-        sprl2.withdrawPRLAndWeth(0, expectedAmountAliceReceived, expectedAmountAliceReceived);
-
-        assertEq(sprl2.balanceOf(address(users.daoTreasury.addr)), 0);
-        assertEq(sprl2.balanceOf(users.alice.addr), INITIAL_AMOUNT - WITHDRAW_AMOUNT);
-        assertEq(auraBpt.balanceOf(address(users.daoTreasury.addr)), expectedAmountFeeReceiverReceived);
-        assertEq(prl.balanceOf(users.alice.addr), alicePrlBalanceBefore + expectedAmountAliceReceived);
-        assertEq(weth.balanceOf(users.alice.addr), aliceWethBalanceBefore + expectedAmountAliceReceived);
-        assertEq(users.alice.addr.balance, aliceEthBalanceBefore);
-    }
-
-    function test_sPRL2_WithdrawPRLAndEth_BeforeUnLockTimeShouldSendUnderlyingTokenToFeeReceiver()
-        external
-        requestSingleWithdraw
-    {
-        skip(timeLockPenaltyERC20.timeLockDuration() / 2);
-        uint256 expectedAmountAliceReceived = WITHDRAW_AMOUNT / 2;
-        uint256 expectedAmountFeeReceiverReceived = WITHDRAW_AMOUNT / 2;
-        uint256 alicePrlBalanceBefore = prl.balanceOf(users.alice.addr);
-        uint256 aliceWethBalanceBefore = weth.balanceOf(users.alice.addr);
-        uint256 aliceEthBalanceBefore = users.alice.addr.balance;
-
-        sprl2.withdrawPRLAndEth(0, expectedAmountAliceReceived, expectedAmountAliceReceived);
-
-        assertEq(sprl2.balanceOf(address(users.daoTreasury.addr)), 0);
-        assertEq(sprl2.balanceOf(users.alice.addr), INITIAL_AMOUNT - WITHDRAW_AMOUNT);
-        assertEq(auraBpt.balanceOf(address(users.daoTreasury.addr)), expectedAmountFeeReceiverReceived);
-        assertEq(prl.balanceOf(users.alice.addr), alicePrlBalanceBefore + expectedAmountAliceReceived);
-        assertEq(weth.balanceOf(users.alice.addr), aliceWethBalanceBefore);
-        assertEq(users.alice.addr.balance, aliceEthBalanceBefore + expectedAmountAliceReceived);
     }
 
     modifier requestMultiWithdraw() {
@@ -105,7 +50,7 @@ contract SPRL2_Withdraw_Integrations_Test is Integrations_Test {
         _;
     }
 
-    function test_sPRL2_WithdrawPRLAndWethMultiple() external requestMultiWithdraw {
+    function test_sPRL2_WithdrawPRLAndWeth_MultipleRequests() external requestMultiWithdraw {
         uint256 withdrawAmount = WITHDRAW_AMOUNT * 3;
         assertEq(sprl2.balanceOf(users.alice.addr), INITIAL_AMOUNT - withdrawAmount);
         skip(sprl2.timeLockDuration());
@@ -116,36 +61,17 @@ contract SPRL2_Withdraw_Integrations_Test is Integrations_Test {
         requestIds[0] = 0;
         requestIds[1] = 1;
         requestIds[2] = 2;
-        sprl2.withdrawPRLAndWethMultiple(requestIds, withdrawAmount, withdrawAmount);
+        sprl2.withdrawPRLAndWeth(requestIds, withdrawAmount, withdrawAmount);
 
         assertEq(prl.balanceOf(users.alice.addr), alicePrlBalanceBefore + withdrawAmount);
         assertEq(weth.balanceOf(users.alice.addr), aliceWethBalanceBefore + withdrawAmount);
     }
 
-    function test_sPRL2_WithdrawPRLAndEthMultiple() external requestMultiWithdraw {
-        uint256 withdrawAmount = WITHDRAW_AMOUNT * 3;
-        assertEq(sprl2.balanceOf(users.alice.addr), INITIAL_AMOUNT - withdrawAmount);
-        skip(sprl2.timeLockDuration());
-
-        uint256 alicePrlBalanceBefore = prl.balanceOf(users.alice.addr);
-        uint256 aliceWethBalanceBefore = weth.balanceOf(users.alice.addr);
-        uint256 aliceEthBalanceBefore = users.alice.addr.balance;
-        uint256[] memory requestIds = new uint256[](3);
-        requestIds[0] = 0;
-        requestIds[1] = 1;
-        requestIds[2] = 2;
-        sprl2.withdrawPRLAndEthMultiple(requestIds, withdrawAmount, withdrawAmount);
-
-        assertEq(prl.balanceOf(users.alice.addr), alicePrlBalanceBefore + withdrawAmount);
-        assertEq(weth.balanceOf(users.alice.addr), aliceWethBalanceBefore);
-        assertEq(users.alice.addr.balance, aliceEthBalanceBefore + withdrawAmount);
-    }
-
-    function test_sPRL2_WithdrawPRLAndWethMultiple_BeforeUnLockTimeShouldSendUnderlyingTokenToFeeReceiver()
+    function test_sPRL2_WithdrawPRLAndWeth_BeforeUnLockTimeShouldSendUnderlyingTokenToFeeReceiver()
         external
         requestMultiWithdraw
     {
-        skip(timeLockPenaltyERC20.timeLockDuration() / 2);
+        skip(sprl2.timeLockDuration() / 2);
         uint256 withdrawAmount = WITHDRAW_AMOUNT * 3;
         uint256 expectedAmountAliceReceived = withdrawAmount / 2;
         uint256 expectedAmountFeeReceiverReceived = withdrawAmount / 2;
@@ -157,37 +83,12 @@ contract SPRL2_Withdraw_Integrations_Test is Integrations_Test {
         requestIds[0] = 0;
         requestIds[1] = 1;
         requestIds[2] = 2;
-        sprl2.withdrawPRLAndWethMultiple(requestIds, expectedAmountAliceReceived, expectedAmountAliceReceived);
+        sprl2.withdrawPRLAndWeth(requestIds, expectedAmountAliceReceived, expectedAmountAliceReceived);
 
         assertEq(auraBpt.balanceOf(address(users.daoTreasury.addr)), expectedAmountFeeReceiverReceived);
         assertEq(sprl2.balanceOf(users.alice.addr), INITIAL_AMOUNT - withdrawAmount);
         assertEq(prl.balanceOf(users.alice.addr), alicePrlBalanceBefore + expectedAmountAliceReceived);
         assertEq(weth.balanceOf(users.alice.addr), aliceWethBalanceBefore + expectedAmountAliceReceived);
         assertEq(users.alice.addr.balance, aliceEthBalanceBefore);
-    }
-
-    function test_sPRL2_WithdrawPRLAndEthMultiple_BeforeUnLockTimeShouldSendUnderlyingTokenToFeeReceiver()
-        external
-        requestMultiWithdraw
-    {
-        skip(timeLockPenaltyERC20.timeLockDuration() / 2);
-        uint256 withdrawAmount = WITHDRAW_AMOUNT * 3;
-        uint256 expectedAmountAliceReceived = withdrawAmount / 2;
-        uint256 expectedAmountFeeReceiverReceived = withdrawAmount / 2;
-        uint256 alicePrlBalanceBefore = prl.balanceOf(users.alice.addr);
-        uint256 aliceWethBalanceBefore = weth.balanceOf(users.alice.addr);
-        uint256 aliceEthBalanceBefore = users.alice.addr.balance;
-
-        uint256[] memory requestIds = new uint256[](3);
-        requestIds[0] = 0;
-        requestIds[1] = 1;
-        requestIds[2] = 2;
-        sprl2.withdrawPRLAndEthMultiple(requestIds, expectedAmountAliceReceived, expectedAmountAliceReceived);
-
-        assertEq(auraBpt.balanceOf(address(users.daoTreasury.addr)), expectedAmountFeeReceiverReceived);
-        assertEq(sprl2.balanceOf(users.alice.addr), INITIAL_AMOUNT - withdrawAmount);
-        assertEq(prl.balanceOf(users.alice.addr), alicePrlBalanceBefore + expectedAmountAliceReceived);
-        assertEq(weth.balanceOf(users.alice.addr), aliceWethBalanceBefore);
-        assertEq(users.alice.addr.balance, aliceEthBalanceBefore + expectedAmountAliceReceived);
     }
 }

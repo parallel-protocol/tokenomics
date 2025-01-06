@@ -21,12 +21,14 @@ contract TimeLockPenaltyERC20_Withdraw_Integrations_Test is Integrations_Test {
         _;
     }
 
-    function test_TimeLockPenaltyERC20_Withdraw_AfterReleaseTime() external requestSingleWithdraw {
+    function test_TimeLockPenaltyERC20_Withdraw_SingleRequest_AfterReleaseTime() external requestSingleWithdraw {
         skip(timeLockPenaltyERC20.timeLockDuration());
         uint256 aliceBalanceBefore = prl.balanceOf(users.alice.addr);
         uint256 contractBalanceBefore = prl.balanceOf(address(timeLockPenaltyERC20));
+        uint256[] memory requestIds = new uint256[](1);
+        requestIds[0] = 0;
 
-        timeLockPenaltyERC20.withdraw(0);
+        timeLockPenaltyERC20.withdraw(requestIds);
 
         uint256 aliceBalanceAfter = prl.balanceOf(users.alice.addr);
         assertEq(aliceBalanceAfter - aliceBalanceBefore, WITHDRAW_AMOUNT);
@@ -35,13 +37,15 @@ contract TimeLockPenaltyERC20_Withdraw_Integrations_Test is Integrations_Test {
         assertEq(contractBalanceBefore - contractBalanceAfter, WITHDRAW_AMOUNT);
     }
 
-    function test_TimeLockPenaltyERC20_Withdraw_HalfReleaseTime() external requestSingleWithdraw {
+    function test_TimeLockPenaltyERC20_Withdraw_SingleRequest_HalfReleaseTime() external requestSingleWithdraw {
         skip(timeLockPenaltyERC20.timeLockDuration() / 2);
         uint256 aliceBalanceBefore = prl.balanceOf(users.alice.addr);
         uint256 contractBalanceBefore = prl.balanceOf(address(timeLockPenaltyERC20));
         uint256 expectedFee = WITHDRAW_AMOUNT / 2;
 
-        timeLockPenaltyERC20.withdraw(0);
+        uint256[] memory requestIds = new uint256[](1);
+        requestIds[0] = 0;
+        timeLockPenaltyERC20.withdraw(requestIds);
 
         uint256 aliceBalanceAfter = prl.balanceOf(users.alice.addr);
         assertEq(aliceBalanceAfter - aliceBalanceBefore, expectedFee);
@@ -51,10 +55,11 @@ contract TimeLockPenaltyERC20_Withdraw_Integrations_Test is Integrations_Test {
         assertEq(prl.balanceOf(users.daoTreasury.addr), expectedFee);
     }
 
-    function test_TimeLockPenaltyERC20_Withdraw_AtRequestTime() external requestSingleWithdraw {
+    function test_TimeLockPenaltyERC20_Withdraw_SingleRequest_AtRequestTime() external requestSingleWithdraw {
         uint256 aliceBalanceBefore = prl.balanceOf(users.alice.addr);
-
-        timeLockPenaltyERC20.withdraw(0);
+        uint256[] memory requestIds = new uint256[](1);
+        requestIds[0] = 0;
+        timeLockPenaltyERC20.withdraw(requestIds);
 
         uint256 aliceBalanceAfter = prl.balanceOf(users.alice.addr);
         assertEq(aliceBalanceAfter, aliceBalanceBefore);
@@ -64,12 +69,6 @@ contract TimeLockPenaltyERC20_Withdraw_Integrations_Test is Integrations_Test {
         assertEq(prl.balanceOf(users.daoTreasury.addr), WITHDRAW_AMOUNT);
     }
 
-    function test_TimeLockPenaltyERC20_Withdraw_RevertWhen_StatusNotUnlocking() external {
-        uint256 wrongRequestId = 0;
-        vm.expectRevert(abi.encodeWithSelector(TimeLockPenaltyERC20.CannotWithdraw.selector, wrongRequestId));
-        timeLockPenaltyERC20.withdraw(wrongRequestId);
-    }
-
     modifier requestMultiWithdraw() {
         timeLockPenaltyERC20.requestWithdraw(WITHDRAW_AMOUNT);
         timeLockPenaltyERC20.requestWithdraw(WITHDRAW_AMOUNT);
@@ -77,7 +76,7 @@ contract TimeLockPenaltyERC20_Withdraw_Integrations_Test is Integrations_Test {
         _;
     }
 
-    function test_TimeLockPenaltyERC20_WithdrawMultiple() external requestMultiWithdraw {
+    function test_TimeLockPenaltyERC20_Withdraw_MultipleRequests_AfterReleaseTime() external requestMultiWithdraw {
         skip(timeLockPenaltyERC20.timeLockDuration());
         uint256[] memory requestIds = new uint256[](3);
         requestIds[0] = 0;
@@ -87,7 +86,7 @@ contract TimeLockPenaltyERC20_Withdraw_Integrations_Test is Integrations_Test {
         uint256 aliceBalanceBefore = prl.balanceOf(users.alice.addr);
         uint256 contractBalanceBefore = prl.balanceOf(address(timeLockPenaltyERC20));
 
-        timeLockPenaltyERC20.withdrawMultiple(requestIds);
+        timeLockPenaltyERC20.withdraw(requestIds);
 
         uint256 aliceBalanceAfter = prl.balanceOf(users.alice.addr);
         assertEq(aliceBalanceAfter - aliceBalanceBefore, expectedAmount);
@@ -98,7 +97,7 @@ contract TimeLockPenaltyERC20_Withdraw_Integrations_Test is Integrations_Test {
         assertEq(timeLockPenaltyERC20.balanceOf(users.daoTreasury.addr), 0);
     }
 
-    function test_TimeLockPenaltyERC20_WithdrawMultiple_HalfReleaseTime() external requestMultiWithdraw {
+    function test_TimeLockPenaltyERC20_Withdraw_MultipleRequests_HalfReleaseTime() external requestMultiWithdraw {
         skip(timeLockPenaltyERC20.timeLockDuration() / 2);
         uint256[] memory requestIds = new uint256[](3);
         requestIds[0] = 0;
@@ -107,7 +106,7 @@ contract TimeLockPenaltyERC20_Withdraw_Integrations_Test is Integrations_Test {
         uint256 expectedAmount = (WITHDRAW_AMOUNT * 3) / 2;
         uint256 aliceBalanceBefore = prl.balanceOf(users.alice.addr);
 
-        timeLockPenaltyERC20.withdrawMultiple(requestIds);
+        timeLockPenaltyERC20.withdraw(requestIds);
 
         uint256 aliceBalanceAfter = prl.balanceOf(users.alice.addr);
         assertEq(aliceBalanceAfter - aliceBalanceBefore, expectedAmount);
@@ -116,20 +115,27 @@ contract TimeLockPenaltyERC20_Withdraw_Integrations_Test is Integrations_Test {
         assertEq(prl.balanceOf(users.daoTreasury.addr), expectedAmount);
     }
 
-    function test_TimeLockPenaltyERC20_WithdrawMultiple_AtRequestTime() external requestMultiWithdraw {
+    function test_TimeLockPenaltyERC20_Withdraw_MultipleRequests_AtRequestTime() external requestMultiWithdraw {
         uint256[] memory requestIds = new uint256[](3);
         requestIds[0] = 0;
         requestIds[1] = 1;
         requestIds[2] = 2;
         uint256 aliceBalanceBefore = prl.balanceOf(users.alice.addr);
 
-        timeLockPenaltyERC20.withdrawMultiple(requestIds);
+        timeLockPenaltyERC20.withdraw(requestIds);
 
         uint256 aliceBalanceAfter = prl.balanceOf(users.alice.addr);
         assertEq(aliceBalanceAfter, aliceBalanceBefore);
 
         assertEq(prl.balanceOf(address(timeLockPenaltyERC20)), INITIAL_BALANCE - WITHDRAW_AMOUNT * 3);
         assertEq(prl.balanceOf(users.daoTreasury.addr), WITHDRAW_AMOUNT * 3);
+    }
+
+    function test_TimeLockPenaltyERC20_Withdraw_MultipleRequests_RevertWhen_StatusNotUnlocking() external {
+        uint256[] memory requestIds = new uint256[](1);
+        requestIds[0] = 0;
+        vm.expectRevert(abi.encodeWithSelector(TimeLockPenaltyERC20.CannotWithdraw.selector, requestIds[0]));
+        timeLockPenaltyERC20.withdraw(requestIds);
     }
 
     modifier PauseContract() {

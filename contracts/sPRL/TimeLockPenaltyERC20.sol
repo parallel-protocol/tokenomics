@@ -197,20 +197,9 @@ contract TimeLockPenaltyERC20 is ERC20Permit, AccessManaged, Pausable, Reentranc
         _deposit(_assetAmount);
     }
 
-    /// @notice Withdraw assets from the contract.
-    /// @param _id The ID of the withdrawal request.
-    function withdraw(uint256 _id) external whenNotPaused nonReentrant {
-        (uint256 amountWithdrawn, uint256 feeAmount) = _withdraw(_id);
-        unlockingAssets = unlockingAssets - amountWithdrawn - feeAmount;
-        if (feeAmount > 0) {
-            underlying.safeTransfer(feeReceiver, feeAmount);
-        }
-        underlying.safeTransfer(msg.sender, amountWithdrawn);
-    }
-
     /// @notice Withdraw multiple withdrawal requests.
     /// @param _ids The IDs of the withdrawal requests to withdraw.
-    function withdrawMultiple(uint256[] calldata _ids) external whenNotPaused nonReentrant {
+    function withdraw(uint256[] calldata _ids) external nonReentrant {
         uint256 totalAmountWithdrawn;
         uint256 totalFeeAmount;
         uint256 i = 0;
@@ -253,15 +242,9 @@ contract TimeLockPenaltyERC20 is ERC20Permit, AccessManaged, Pausable, Reentranc
         emit RequestedUnlocking(id, msg.sender, _unlockingAmount);
     }
 
-    /// @notice Cancel a withdrawal request.
-    /// @param _id The ID of the withdrawal request.
-    function cancelWithdrawalRequest(uint256 _id) external whenNotPaused {
-        _cancelWithdrawalRequest(_id);
-    }
-
     /// @notice Cancel multiple withdrawal requests.
     /// @param _ids The IDs of the withdrawal requests to cancel.
-    function cancelMultipleWithdrawalRequests(uint256[] calldata _ids) external whenNotPaused {
+    function cancelWithdrawalRequests(uint256[] calldata _ids) external whenNotPaused {
         uint256 i = 0;
         for (; i < _ids.length; ++i) {
             _cancelWithdrawalRequest(_ids[i]);
