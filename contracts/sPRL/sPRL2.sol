@@ -280,6 +280,10 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
         uint256[] memory _amountsIn =
             BALANCER_ROUTER.addLiquidityProportional(address(BPT), maxAmountsIn, _exactBptAmount, false, "");
 
+        /// @dev Reset approvals in case not all tokens were used
+        PRL.approve(address(BALANCER_ROUTER), 0);
+        WETH.approve(address(BALANCER_ROUTER), 0);
+
         /// @dev Deposit into Aura
         BPT.approve(address(AURA_BOOSTER_LITE), _exactBptAmount);
         if (!AURA_BOOSTER_LITE.deposit(AURA_POOL_PID, _exactBptAmount, true)) revert DepositFailed();
@@ -300,6 +304,7 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
                 WETH.transfer(msg.sender, wethBalanceToReturn);
             }
         }
+
         return (_amountsIn, _exactBptAmount);
     }
 
