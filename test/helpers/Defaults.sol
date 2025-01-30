@@ -11,10 +11,6 @@ contract Defaults {
 
     uint256 public constant INITIAL_BALANCE = 100_000e18;
     uint256 public constant DEFAULT_MINT_AMOUNT = 100e18;
-    uint256 public constant INIT_PRICE = 1000e18;
-    uint256 public constant MIN_INIT_PRICE = 1e18;
-    uint256 public constant EPOCH_DURATION = 14 days;
-    uint256 public constant PRICE_MULTIPLIER = 2e18;
     uint64 public constant DEFAULT_TIME_LOCK_DURATION = 28 days;
     uint256 public constant DEFAULT_PENALTY_PERCENTAGE = 1e18;
 

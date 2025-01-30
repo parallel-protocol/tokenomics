@@ -10,7 +10,6 @@ import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { IERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import { Auctioneer } from "contracts/fees/Auctioneer.sol";
 import { MainFeeDistributor } from "contracts/fees/MainFeeDistributor.sol";
 import { SideChainFeeCollector } from "contracts/fees/SideChainFeeCollector.sol";
 import { FeeCollectorCore } from "contracts/fees/FeeCollectorCore.sol";
@@ -67,8 +66,6 @@ abstract contract Deploys is Test {
     AuraRewardPoolMock internal auraRewardPoolMock;
     VirtualBalanceRewardPoolMock internal virtualBalanceRewardPoolMock;
     AuraStashTokenMock internal auraStashTokenMock;
-
-    Auctioneer internal auctioneer;
 
     RewardMerkleDistributor internal rewardMerkleDistributor;
 
@@ -208,33 +205,6 @@ abstract contract Deploys is Test {
         ERC20Mock _erc20 = new ERC20Mock(_name, _symbol, _decimals);
         vm.label({ account: address(_erc20), newLabel: _name });
         return _erc20;
-    }
-
-    function _deployAuctioneer(
-        address _accessManager,
-        address _paymentToken,
-        address _paymentReceiver,
-        uint256 _initStartTime,
-        uint256 _epochPeriod,
-        uint256 _initPrice,
-        uint256 _priceMultiplier,
-        uint256 _minInitPrice
-    )
-        internal
-        returns (Auctioneer)
-    {
-        Auctioneer _auctioneer = new Auctioneer(
-            _accessManager,
-            _paymentToken,
-            _paymentReceiver,
-            _initStartTime,
-            _epochPeriod,
-            _initPrice,
-            _priceMultiplier,
-            _minInitPrice
-        );
-        vm.label({ account: address(_auctioneer), newLabel: "Auctioneer" });
-        return _auctioneer;
     }
 
     function _deployMainFeeDistributor(

@@ -15,17 +15,6 @@ abstract contract Integrations_Test is Base_Test {
             address(accessManager), mainEid, address(bridgeableTokenMock), address(mainFeeDistributor), address(par)
         );
 
-        auctioneer = _deployAuctioneer(
-            address(accessManager),
-            address(par),
-            address(sideChainFeeCollector),
-            block.timestamp,
-            EPOCH_DURATION,
-            INIT_PRICE,
-            PRICE_MULTIPLIER,
-            MIN_INIT_PRICE
-        );
-
         timeLockPenaltyERC20 = _deployTimeLockPenaltyERC20(
             address(prl),
             users.daoTreasury.addr,
@@ -63,6 +52,7 @@ abstract contract Integrations_Test is Base_Test {
             prl,
             weth
         );
+
         rewardMerkleDistributor =
             _deployRewardMerkleDistributor(address(accessManager), address(par), users.daoTreasury.addr);
     }
