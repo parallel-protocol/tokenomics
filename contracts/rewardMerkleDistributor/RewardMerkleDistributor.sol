@@ -242,7 +242,7 @@ contract RewardMerkleDistributor is AccessManaged, Pausable, ReentrancyGuard {
 
     function _getEpochExpiredRewards(uint64 _epochId) private view returns (uint256 epochExpiredRewards) {
         MerkleDrop memory _merkleDrop = merkleDrops[_epochId];
-        if (_merkleDrop.expiryTime > uint64(block.timestamp)) revert EpochNotExpired();
+        if (_merkleDrop.expiryTime >= uint64(block.timestamp)) revert EpochNotExpired();
         epochExpiredRewards = _merkleDrop.totalAmount - totalClaimedPerEpoch[_epochId];
     }
 }
