@@ -6,9 +6,11 @@ import "test/Integrations.t.sol";
 contract RewardMerkleDistributor_UpdateMerkleDrop_Integrations_Test is Integrations_Test {
     uint64 epochId = 1;
     RewardMerkleDistributor.MerkleDrop merkleDrop;
+    uint256 totalRewards = INITIAL_BALANCE * 2;
 
     function setUp() public override {
         super.setUp();
+        par.mint(address(rewardMerkleDistributor), totalRewards);
         merkleDrop = RewardMerkleDistributor.MerkleDrop({
             root: keccak256("root"),
             totalAmount: INITIAL_BALANCE,

@@ -7,8 +7,10 @@ import { MerkleProof } from "@openzeppelin/contracts/utils/cryptography/MerklePr
 import "test/Integrations.t.sol";
 
 contract RewardMerkleDistributor_Claim_Integrations_Test is Integrations_Test {
-    uint256 internal firstRewardsAmount = 1e18;
-    uint256 internal secondRewardsAmount = 2e18;
+    uint256 internal firstClaimRewardsAmount = 1e18;
+    uint256 internal secondClaimRewardsAmount = 2e18;
+    uint256 internal epochRewards = INITIAL_BALANCE;
+    uint256 internal totalRewards = epochRewards * 2;
 
     uint64 firstEpochId = 0;
     RewardMerkleDistributor.MerkleDrop firstEpochMerkleDrop;
@@ -28,18 +30,18 @@ contract RewardMerkleDistributor_Claim_Integrations_Test is Integrations_Test {
         firstEpochMerkleTree = new Merkle();
         secondEpochMerkleTree = new Merkle();
 
-        par.mint(address(rewardMerkleDistributor), INITIAL_BALANCE);
+        par.mint(address(rewardMerkleDistributor), totalRewards);
 
         vm.startPrank(users.admin.addr);
         /// @dev Leaves are added in the order of the merkle tree's firstEpochLeaves.
         /// @dev alice reward is at index 0, bob reward is at index 1.
-        firstEpochLeaves.push(keccak256(abi.encodePacked(firstEpochId, users.alice.addr, firstRewardsAmount)));
-        firstEpochLeaves.push(keccak256(abi.encodePacked(firstEpochId, users.bob.addr, firstRewardsAmount)));
+        firstEpochLeaves.push(keccak256(abi.encodePacked(firstEpochId, users.alice.addr, firstClaimRewardsAmount)));
+        firstEpochLeaves.push(keccak256(abi.encodePacked(firstEpochId, users.bob.addr, firstClaimRewardsAmount)));
         firstEpochRoot = firstEpochMerkleTree.getRoot(firstEpochLeaves);
 
         firstEpochMerkleDrop = RewardMerkleDistributor.MerkleDrop({
             root: firstEpochRoot,
-            totalAmount: INITIAL_BALANCE,
+            totalAmount: epochRewards,
             startTime: uint64(block.timestamp),
             expiryTime: uint64(block.timestamp) + uint64(rewardMerkleDistributor.EPOCH_LENGTH() * 6)
         });
@@ -47,12 +49,12 @@ contract RewardMerkleDistributor_Claim_Integrations_Test is Integrations_Test {
 
         /// @dev Leaves are added in the order of the merkle tree's secondEpochLeaves.
         /// @dev alice reward is at index 0, bob reward is at index 1.
-        secondEpochLeaves.push(keccak256(abi.encodePacked(secondEpochId, users.alice.addr, secondRewardsAmount)));
-        secondEpochLeaves.push(keccak256(abi.encodePacked(secondEpochId, users.bob.addr, secondRewardsAmount)));
+        secondEpochLeaves.push(keccak256(abi.encodePacked(secondEpochId, users.alice.addr, secondClaimRewardsAmount)));
+        secondEpochLeaves.push(keccak256(abi.encodePacked(secondEpochId, users.bob.addr, secondClaimRewardsAmount)));
         secondEpochRoot = secondEpochMerkleTree.getRoot(secondEpochLeaves);
         secondEpochMerkleDrop = RewardMerkleDistributor.MerkleDrop({
             root: secondEpochRoot,
-            totalAmount: INITIAL_BALANCE,
+            totalAmount: epochRewards,
             startTime: uint64(block.timestamp) + uint64(rewardMerkleDistributor.EPOCH_LENGTH()),
             expiryTime: uint64(block.timestamp) + uint64(rewardMerkleDistributor.EPOCH_LENGTH() * 7)
         });
@@ -69,21 +71,21 @@ contract RewardMerkleDistributor_Claim_Integrations_Test is Integrations_Test {
         claimsData[0] = RewardMerkleDistributor.ClaimCallData({
             epochId: firstEpochId,
             account: users.alice.addr,
-            amount: firstRewardsAmount,
+            amount: firstClaimRewardsAmount,
             merkleProof: proof
         });
 
         rewardMerkleDistributor.claims(claimsData);
-        assertEq(par.balanceOf(users.alice.addr), alicePARBalanceBefore + firstRewardsAmount);
-        assertEq(par.balanceOf(address(rewardMerkleDistributor)), INITIAL_BALANCE - firstRewardsAmount);
-        assertEq(rewardMerkleDistributor.totalClaimedPerUser(users.alice.addr), firstRewardsAmount);
-        assertEq(rewardMerkleDistributor.totalClaimedPerEpoch(firstEpochId), firstRewardsAmount);
-        assertEq(rewardMerkleDistributor.totalClaimed(), firstRewardsAmount);
+        assertEq(par.balanceOf(users.alice.addr), alicePARBalanceBefore + firstClaimRewardsAmount);
+        assertEq(par.balanceOf(address(rewardMerkleDistributor)), totalRewards - firstClaimRewardsAmount);
+        assertEq(rewardMerkleDistributor.totalClaimedPerUser(users.alice.addr), firstClaimRewardsAmount);
+        assertEq(rewardMerkleDistributor.totalClaimedPerEpoch(firstEpochId), firstClaimRewardsAmount);
+        assertEq(rewardMerkleDistributor.totalClaimed(), firstClaimRewardsAmount);
     }
 
     function test_RewardMerkleDistributor_Claim_SeveralEpochs() external {
         vm.startPrank(users.alice.addr);
-        uint256 expectedTotalClaimed = firstRewardsAmount + secondRewardsAmount;
+        uint256 expectedTotalClaimed = firstClaimRewardsAmount + secondClaimRewardsAmount;
 
         uint256 alicePARBalanceBefore = par.balanceOf(users.alice.addr);
         bytes32[] memory firstEpochProof = firstEpochMerkleTree.getProof(firstEpochLeaves, 0);
@@ -93,13 +95,13 @@ contract RewardMerkleDistributor_Claim_Integrations_Test is Integrations_Test {
         claimsData[0] = RewardMerkleDistributor.ClaimCallData({
             epochId: firstEpochId,
             account: users.alice.addr,
-            amount: firstRewardsAmount,
+            amount: firstClaimRewardsAmount,
             merkleProof: firstEpochProof
         });
         claimsData[1] = RewardMerkleDistributor.ClaimCallData({
             epochId: secondEpochId,
             account: users.alice.addr,
-            amount: secondRewardsAmount,
+            amount: secondClaimRewardsAmount,
             merkleProof: secondEpochProof
         });
 
@@ -107,10 +109,10 @@ contract RewardMerkleDistributor_Claim_Integrations_Test is Integrations_Test {
 
         rewardMerkleDistributor.claims(claimsData);
         assertEq(par.balanceOf(users.alice.addr), alicePARBalanceBefore + expectedTotalClaimed);
-        assertEq(par.balanceOf(address(rewardMerkleDistributor)), INITIAL_BALANCE - expectedTotalClaimed);
+        assertEq(par.balanceOf(address(rewardMerkleDistributor)), totalRewards - expectedTotalClaimed);
         assertEq(rewardMerkleDistributor.totalClaimedPerUser(users.alice.addr), expectedTotalClaimed);
-        assertEq(rewardMerkleDistributor.totalClaimedPerEpoch(firstEpochId), firstRewardsAmount);
-        assertEq(rewardMerkleDistributor.totalClaimedPerEpoch(secondEpochId), secondRewardsAmount);
+        assertEq(rewardMerkleDistributor.totalClaimedPerEpoch(firstEpochId), firstClaimRewardsAmount);
+        assertEq(rewardMerkleDistributor.totalClaimedPerEpoch(secondEpochId), secondClaimRewardsAmount);
         assertEq(rewardMerkleDistributor.totalClaimed(), expectedTotalClaimed);
     }
 
@@ -122,7 +124,7 @@ contract RewardMerkleDistributor_Claim_Integrations_Test is Integrations_Test {
         claimsData[0] = RewardMerkleDistributor.ClaimCallData({
             epochId: firstEpochId,
             account: users.alice.addr,
-            amount: firstRewardsAmount,
+            amount: firstClaimRewardsAmount,
             merkleProof: proof
         });
         vm.warp(firstEpochMerkleDrop.expiryTime + 1);
@@ -138,7 +140,7 @@ contract RewardMerkleDistributor_Claim_Integrations_Test is Integrations_Test {
         claimsData[0] = RewardMerkleDistributor.ClaimCallData({
             epochId: secondEpochId,
             account: users.alice.addr,
-            amount: secondRewardsAmount,
+            amount: secondClaimRewardsAmount,
             merkleProof: proof
         });
         vm.expectRevert(RewardMerkleDistributor.NotStarted.selector);
@@ -154,7 +156,7 @@ contract RewardMerkleDistributor_Claim_Integrations_Test is Integrations_Test {
         claimsData[0] = RewardMerkleDistributor.ClaimCallData({
             epochId: firstEpochId,
             account: users.alice.addr,
-            amount: firstRewardsAmount,
+            amount: firstClaimRewardsAmount,
             merkleProof: proof
         });
 
@@ -173,7 +175,7 @@ contract RewardMerkleDistributor_Claim_Integrations_Test is Integrations_Test {
         claimsData[0] = RewardMerkleDistributor.ClaimCallData({
             epochId: firstEpochId,
             account: users.alice.addr,
-            amount: firstRewardsAmount * 100,
+            amount: firstClaimRewardsAmount * 100,
             merkleProof: proof
         });
 
@@ -183,9 +185,10 @@ contract RewardMerkleDistributor_Claim_Integrations_Test is Integrations_Test {
 
     modifier SetupTotalEpochRewardAmountClaimedExceedsEpochTotalAmount() {
         vm.startPrank(users.admin.addr);
+        console2.log(par.balanceOf(address(rewardMerkleDistributor)));
         firstEpochMerkleDrop = RewardMerkleDistributor.MerkleDrop({
             root: firstEpochRoot,
-            totalAmount: firstRewardsAmount - 1,
+            totalAmount: firstClaimRewardsAmount - 1,
             startTime: uint64(block.timestamp),
             expiryTime: uint64(block.timestamp) + uint64(rewardMerkleDistributor.EPOCH_LENGTH() * 6)
         });
@@ -206,7 +209,7 @@ contract RewardMerkleDistributor_Claim_Integrations_Test is Integrations_Test {
         claimsData[0] = RewardMerkleDistributor.ClaimCallData({
             epochId: firstEpochId,
             account: users.alice.addr,
-            amount: firstRewardsAmount,
+            amount: firstClaimRewardsAmount,
             merkleProof: proof
         });
 
