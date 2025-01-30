@@ -130,6 +130,11 @@ swaps.
 During contract deploiement we took the choice to not check that address is not zero in constructor. We prefer to check
 that off-chain to avoid additional gas cost.
 
+### Aura Pool PID is hardcoded
+
+Aura Pool PID is hardcoded in the sPRL2 contract to reduce constructor parameters and avoid additional gas cost during
+deployment.
+
 ## Tests
 
 The contracts are tested using the Hardhat framework with additional testing utilities.

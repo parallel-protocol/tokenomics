@@ -23,6 +23,7 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
     string constant NAME = "Stake 20WETH-80PRL Aura Deposit Vault";
     string constant SYMBOL = "sPRL2";
 
+    /// @dev Aura Pool PID is hardcoded and must be updated before deploying
     uint256 public constant AURA_POOL_PID = 19;
 
     //-------------------------------------------
