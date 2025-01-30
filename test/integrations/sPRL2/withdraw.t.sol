@@ -85,7 +85,7 @@ contract SPRL2_Withdraw_Integrations_Test is Integrations_Test {
         requestIds[2] = 2;
         sprl2.withdrawPRLAndWeth(requestIds, expectedAmountAliceReceived, expectedAmountAliceReceived);
 
-        assertEq(auraBpt.balanceOf(address(users.daoTreasury.addr)), expectedAmountFeeReceiverReceived);
+        assertEq(bpt.balanceOf(address(users.daoTreasury.addr)), expectedAmountFeeReceiverReceived);
         assertEq(sprl2.balanceOf(users.alice.addr), INITIAL_AMOUNT - withdrawAmount);
         assertEq(prl.balanceOf(users.alice.addr), alicePrlBalanceBefore + expectedAmountAliceReceived);
         assertEq(weth.balanceOf(users.alice.addr), aliceWethBalanceBefore + expectedAmountAliceReceived);

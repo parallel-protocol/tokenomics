@@ -255,12 +255,12 @@ abstract contract Deploys is Test {
         virtualBalanceRewardPoolMock = new VirtualBalanceRewardPoolMock(address(auraStashTokenMock));
         vm.label({ account: address(virtualBalanceRewardPoolMock), newLabel: "VirtualBalanceRewardPoolMock" });
 
-        address[] memory _extraRewards = new address[](1);
-        _extraRewards[0] = address(virtualBalanceRewardPoolMock);
-        auraRewardPoolMock = new AuraRewardPoolMock(_rewardToken, _extraRewards);
-        vm.label({ account: address(auraRewardPoolMock), newLabel: "AuraRewardPoolMock" });
-
         auraBoosterLiteMock = new AuraBoosterLiteMock(_bpt, _auraBpt);
         vm.label({ account: address(auraBoosterLiteMock), newLabel: "AuraBoosterLiteMock" });
+
+        address[] memory _extraRewards = new address[](1);
+        _extraRewards[0] = address(virtualBalanceRewardPoolMock);
+        auraRewardPoolMock = new AuraRewardPoolMock(_rewardToken, _extraRewards, address(auraBoosterLiteMock));
+        vm.label({ account: address(auraRewardPoolMock), newLabel: "AuraRewardPoolMock" });
     }
 }

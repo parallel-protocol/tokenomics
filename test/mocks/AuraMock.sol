@@ -23,13 +23,11 @@ contract AuraBoosterLiteMock is IAuraBoosterLite {
 
     function deposit(uint256, uint256 _amount, bool) external returns (bool) {
         bpt.transferFrom(msg.sender, address(this), _amount);
-        auraBpt.mint(msg.sender, _amount);
         return true;
     }
 
-    function withdraw(uint256, uint256 _amount) external returns (bool) {
-        auraBpt.burn(msg.sender, _amount);
-        bpt.transfer(msg.sender, _amount);
+    function withdrawTo(uint256, uint256 _amount, address _to) external returns (bool) {
+        bpt.transfer(_to, _amount);
         return true;
     }
 }
@@ -37,10 +35,12 @@ contract AuraBoosterLiteMock is IAuraBoosterLite {
 contract AuraRewardPoolMock is IAuraRewardPool {
     address[] public extraRewardsTokens;
     address public rewardToken;
+    IAuraBoosterLite public booster;
 
-    constructor(address _rewardToken, address[] memory _extraRewards) {
+    constructor(address _rewardToken, address[] memory _extraRewards, address _booster) {
         extraRewardsTokens = _extraRewards;
         rewardToken = _rewardToken;
+        booster = IAuraBoosterLite(_booster);
     }
 
     function setExtraRewards(address[] memory _extraRewards) external {
@@ -57,6 +57,11 @@ contract AuraRewardPoolMock is IAuraRewardPool {
 
     function extraRewards() external view returns (address[] memory) {
         return extraRewardsTokens;
+    }
+
+    function withdrawAndUnwrap(uint256 amount, bool) external returns (bool) {
+        booster.withdrawTo(0, amount, msg.sender);
+        return true;
     }
 }
 

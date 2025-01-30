@@ -70,7 +70,7 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
     //-------------------------------------------
 
     /// @notice Constructor for the sPRL2 contract.
-    /// @param _auraBPT The address of the Aura BPT token.
+    /// @param _stakedAuraBPT The address of the Staked Aura BPT token.
     /// @param _feeReceiver The address of the fee receiver.
     /// @param _accessManager The address of the access manager.
     /// @param _startPenaltyPercentage The start penalty percentage.
@@ -82,7 +82,7 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
     /// @param _prl The address of the PRL token.
     /// @param _weth The address of the WETH token.
     constructor(
-        address _auraBPT,
+        address _stakedAuraBPT,
         address _feeReceiver,
         address _accessManager,
         uint256 _startPenaltyPercentage,
@@ -97,7 +97,7 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
         TimeLockPenaltyERC20(
             NAME,
             SYMBOL,
-            _auraBPT,
+            _stakedAuraBPT,
             _feeReceiver,
             _accessManager,
             _startPenaltyPercentage,
@@ -196,21 +196,16 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
         returns (uint256 prlAmount, uint256 wethAmount)
     {
         uint256 totalBptAmount;
-        uint256 totalSlashBptAmount;
+        uint256 totalBptAmountSlashed;
         for (uint8 i; i < _requestIds.length; i++) {
             (uint256 bptAmount, uint256 slashBptAmount) = _withdraw(_requestIds[i]);
             totalBptAmount += bptAmount;
-            totalSlashBptAmount += slashBptAmount;
+            totalBptAmountSlashed += slashBptAmount;
         }
 
-        (prlAmount, wethAmount) = _exitPool(totalBptAmount, _minPrlAmount, _minWethAmount);
+        (prlAmount, wethAmount) = _exitPool(totalBptAmount, totalBptAmountSlashed, _minPrlAmount, _minWethAmount);
 
-        // Transfer the slash amount of auraBPT to the fee receiver
-        if (totalSlashBptAmount > 0) {
-            underlying.safeTransfer(feeReceiver, totalSlashBptAmount);
-        }
-
-        emit WithdrawlPRLAndWeth(_requestIds, msg.sender, prlAmount, wethAmount, totalSlashBptAmount);
+        emit WithdrawlPRLAndWeth(_requestIds, msg.sender, prlAmount, wethAmount, totalBptAmountSlashed);
         PRL.transfer(msg.sender, prlAmount);
         WETH.transfer(msg.sender, wethAmount);
     }
@@ -308,6 +303,7 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
     }
 
     /// @notice Exit the pool.
+    /// @dev Unstake
     /// @dev Balancer V3 will revert if the amount of tokens received is less than the minimum expected.
     /// @param _bptAmount The amount of BPT to withdraw.
     /// @param _minPrlAmount The minimum amount of PRL to receive.
@@ -316,6 +312,7 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
     /// @return _prlAmount The amount of PRL received.
     function _exitPool(
         uint256 _bptAmount,
+        uint256 _bptAmountSlashed,
         uint256 _minPrlAmount,
         uint256 _minWethAmount
     )
@@ -331,7 +328,12 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
         }
 
         /// @dev withdraw from aura
-        AURA_BOOSTER_LITE.withdraw(AURA_POOL_PID, _bptAmount);
+        AURA_VAULT.withdrawAndUnwrap(_bptAmount + _bptAmountSlashed, false);
+
+        // Transfer the slash amount of BPT to the fee receiver
+        if (_bptAmountSlashed > 0) {
+            BPT.safeTransfer(feeReceiver, _bptAmountSlashed);
+        }
 
         BPT.approve(address(BALANCER_ROUTER), _bptAmount);
 
