@@ -230,8 +230,10 @@ contract RewardMerkleDistributor is AccessManaged, Pausable, ReentrancyGuard {
         if (currentTimetamp > _merkleDrop.expiryTime) revert EpochExpired();
         if (currentTimetamp < _merkleDrop.startTime) revert NotStarted();
         if (hasClaimed[_account][_epochId]) revert AlreadyClaimed();
-        bool isValidProof =
-            MerkleProof.verify(_proof, _merkleDrop.root, keccak256(abi.encodePacked(_epochId, _account, _amount)));
+        /// @dev Merkle leaves are double-hashed to avoid second preimage attack:
+        /// https://www.rareskills.io/post/merkle-tree-second-preimage-attack
+        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(_epochId, _account, _amount))));
+        bool isValidProof = MerkleProof.verify(_proof, _merkleDrop.root, leaf);
         if (!isValidProof) revert ProofInvalid();
         totalClaimed += _amount;
         totalClaimedPerEpoch[_epochId] += _amount;
