@@ -125,6 +125,11 @@ Auctioneer contract has been removed from the protocol as `Issue_10: Auctioneer 
 significantly impact the protocol revenue. We will then send the fees to the DAO treasury that will proceed with OTC
 swaps.
 
+### Initialize address variable in constructor
+
+During contract deploiement we took the choice to not check that address is not zero in constructor. We prefer to check
+that off-chain to avoid additional gas cost.
+
 ## Tests
 
 The contracts are tested using the Hardhat framework with additional testing utilities.
