@@ -138,7 +138,9 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
         whenNotPaused
         returns (uint256[] memory amountsIn, uint256 bptAmount)
     {
-        IERC20Permit(address(PRL)).permit(msg.sender, address(this), _maxPrlAmount, _deadline, _v, _r, _s);
+        // @dev using try catch to avoid reverting the transaction in case of front-running
+        try IERC20Permit(address(PRL)).permit(msg.sender, address(this), _maxPrlAmount, _deadline, _v, _r, _s) { }
+            catch { }
 
         PRL.transferFrom(msg.sender, address(this), _maxPrlAmount);
         WETH.transferFrom(msg.sender, address(this), _maxWethAmount);
@@ -168,7 +170,9 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
         whenNotPaused
         returns (uint256[] memory amountsIn, uint256 bptAmount)
     {
-        IERC20Permit(address(PRL)).permit(msg.sender, address(this), _maxPrlAmount, _deadline, _v, _r, _s);
+        // @dev using try catch to avoid reverting the transaction in case of front-running
+        try IERC20Permit(address(PRL)).permit(msg.sender, address(this), _maxPrlAmount, _deadline, _v, _r, _s) { }
+            catch { }
 
         PRL.transferFrom(msg.sender, address(this), _maxPrlAmount);
 

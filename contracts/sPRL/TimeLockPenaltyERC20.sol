@@ -192,7 +192,9 @@ contract TimeLockPenaltyERC20 is ERC20Permit, AccessManaged, Pausable, Reentranc
         whenNotPaused
         nonReentrant
     {
-        IERC20Permit(address(underlying)).permit(msg.sender, address(this), _assetAmount, _deadline, _v, _r, _s);
+        // @dev using try catch to avoid reverting the transaction in case of front-running
+        try IERC20Permit(address(underlying)).permit(msg.sender, address(this), _assetAmount, _deadline, _v, _r, _s) {
+        } catch { }
         underlying.safeTransferFrom(msg.sender, address(this), _assetAmount);
         _deposit(_assetAmount);
     }
