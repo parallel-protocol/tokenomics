@@ -246,7 +246,7 @@ contract TimeLockPenaltyERC20 is ERC20Permit, AccessManaged, Pausable, Reentranc
 
     /// @notice Cancel multiple withdrawal requests.
     /// @param _ids The IDs of the withdrawal requests to cancel.
-    function cancelWithdrawalRequests(uint256[] calldata _ids) external whenNotPaused {
+    function cancelWithdrawalRequests(uint256[] calldata _ids) external {
         uint256 i = 0;
         for (; i < _ids.length; ++i) {
             _cancelWithdrawalRequest(_ids[i]);
