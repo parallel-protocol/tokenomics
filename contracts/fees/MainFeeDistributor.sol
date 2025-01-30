@@ -109,7 +109,7 @@ contract MainFeeDistributor is FeeCollectorCore {
         uint256 balance = bridgeableToken.balanceOf(address(this));
         if (balance == 0) revert NothingToSwap();
 
-        uint256 maxSwapAmount = IBridgeableToken(address(bridgeableToken)).getMaxMintableAmount();
+        uint256 maxSwapAmount = IBridgeableToken(address(bridgeableToken)).getMaxCreditableAmount();
         if (maxSwapAmount == 0) revert MaxSwappableAmountIsZero();
 
         uint256 swapAmount = balance > maxSwapAmount ? maxSwapAmount : balance;

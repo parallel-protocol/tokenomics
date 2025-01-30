@@ -6,5 +6,5 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 interface IBridgeableToken {
     function swapLzTokenToPrincipalToken(uint256 _amount) external;
 
-    function getMaxMintableAmount() external view returns (uint256);
+    function getMaxCreditableAmount() external view returns (uint256);
 }

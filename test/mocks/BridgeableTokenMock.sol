@@ -29,7 +29,7 @@ contract BridgeableTokenMock is ERC20Mock, IBridgeableToken {
         principalToken.mint(msg.sender, _amount);
     }
 
-    function getMaxMintableAmount() external view returns (uint256) {
+    function getMaxCreditableAmount() external view returns (uint256) {
         return maxMintableAmount;
     }
 
