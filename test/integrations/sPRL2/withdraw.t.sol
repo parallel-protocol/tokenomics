@@ -91,4 +91,22 @@ contract SPRL2_Withdraw_Integrations_Test is Integrations_Test {
         assertEq(weth.balanceOf(users.alice.addr), aliceWethBalanceBefore + expectedAmountAliceReceived);
         assertEq(users.alice.addr.balance, aliceEthBalanceBefore);
     }
+
+    modifier PauseContract() {
+        vm.startPrank(users.admin.addr);
+        sprl2.pause();
+        _;
+    }
+
+    function test_SPRL2_EmergencyWithdraw() external PauseContract {
+        vm.startPrank(users.alice.addr);
+        uint256 aliceBalanceBefore = bpt.balanceOf(users.alice.addr);
+
+        sprl2.emergencyWithdraw(WITHDRAW_AMOUNT);
+
+        uint256 aliceBalanceAfter = bpt.balanceOf(users.alice.addr);
+        assertEq(aliceBalanceAfter - aliceBalanceBefore, WITHDRAW_AMOUNT);
+
+        assertEq(sprl2.balanceOf(users.daoTreasury.addr), 0);
+    }
 }

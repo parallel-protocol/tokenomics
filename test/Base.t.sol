@@ -3,6 +3,7 @@ pragma solidity 0.8.25;
 
 import { console2 } from "@forge-std/console2.sol";
 import { Test, Vm } from "@forge-std/Test.sol";
+import { StdCheats } from "@forge-std/StdCheats.sol";
 
 import "./helpers/Deploys.sol";
 import "./helpers/Defaults.sol";

@@ -22,7 +22,7 @@ contract SPRL2_Constructor_Integrations_Test is Base_Test {
         assertEq(address(sprl2.underlying()), address(auraBpt));
         assertEq(sprl2.timeLockDuration(), DEFAULT_TIME_LOCK_DURATION);
         assertEq(sprl2.startPenaltyPercentage(), DEFAULT_PENALTY_PERCENTAGE);
-        assertEq(sprl2.unlockingAssets(), 0);
+        assertEq(sprl2.unlockingAmount(), 0);
         assertEq(sprl2.feeReceiver(), users.daoTreasury.addr);
         assertEq(sprl2.name(), "Stake 20WETH-80PRL Aura Deposit Vault");
         assertEq(sprl2.symbol(), "sPRL2");

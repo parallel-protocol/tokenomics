@@ -16,6 +16,12 @@ import {
 } from "contracts/interfaces/IAura.sol";
 import { IWrappedNative } from "contracts/interfaces/IWrappedNative.sol";
 
+/// @title sPRL2
+/// @author Cooper Labs
+/// @custom:contact security@cooperlabs.xyz
+/// @dev Staked into Aura doesn't credit any erc20 tokens to the contract.
+/// @notice sPRL2 is a staking contract that allows users to deposit PRL and WETH into a Balancer V3 pool that is
+/// staked into the Aura Pool.
 contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
     using Address for address payable;
     using SafeERC20 for IERC20;
@@ -64,7 +70,7 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
     //-------------------------------------------
 
     /// @notice Error thrown when the deposit fails.
-    error DepositFailed();
+    error AuraDepositFailed();
 
     //-------------------------------------------
     // Constructor
@@ -117,6 +123,14 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
     //-------------------------------------------
     // External Functions
     //-------------------------------------------
+
+    /// @notice Deposit BPT into the Aura Pool and mint the equivalent amount of sPRL2.
+    /// @param _amount The amount of BPT to deposit.
+    function depositBPT(uint256 _amount) external whenNotPaused nonReentrant {
+        BPT.safeTransferFrom(msg.sender, address(this), _amount);
+        _depositIntoAuraAndStake(_amount);
+        _deposit(_amount);
+    }
 
     /// @notice Deposit PRL and WETH.
     /// @param _maxPrlAmount The maximum amount of PRL to deposit.
@@ -236,6 +250,16 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
         }
     }
 
+    /// @notice Allow users to emergency withdraw assets without penalties.
+    /// @dev This function can only be called when the contract is paused.
+    /// @param _amount The amount of assets to unlock.
+    function emergencyWithdraw(uint256 _amount) external whenPaused nonReentrant {
+        _burn(msg.sender, _amount);
+        _exitAuraVaultAndUnstake(_amount, 0);
+        emit EmergencyWithdraw(msg.sender, _amount);
+        BPT.safeTransfer(msg.sender, _amount);
+    }
+
     /// @notice Allow ETH to be received.
     receive() external payable { }
 
@@ -285,8 +309,7 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
         WETH.approve(address(BALANCER_ROUTER), 0);
 
         /// @dev Deposit into Aura
-        BPT.approve(address(AURA_BOOSTER_LITE), _exactBptAmount);
-        if (!AURA_BOOSTER_LITE.deposit(AURA_POOL_PID, _exactBptAmount, true)) revert DepositFailed();
+        _depositIntoAuraAndStake(_exactBptAmount);
 
         /// @dev Return any remaining PRL.
         uint256 prlBalanceToReturn = PRL.balanceOf(address(this));
@@ -308,6 +331,13 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
         return (_amountsIn, _exactBptAmount);
     }
 
+    /// @notice Deposit BPT into the Aura Pool and stake it.
+    /// @param _bptAmount The amount of BPT to deposit.
+    function _depositIntoAuraAndStake(uint256 _bptAmount) internal {
+        BPT.approve(address(AURA_BOOSTER_LITE), _bptAmount);
+        if (!AURA_BOOSTER_LITE.deposit(AURA_POOL_PID, _bptAmount, true)) revert AuraDepositFailed();
+    }
+
     /// @notice Exit the pool.
     /// @dev Unstake
     /// @dev Balancer V3 will revert if the amount of tokens received is less than the minimum expected.
@@ -325,6 +355,9 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
         internal
         returns (uint256 _wethAmount, uint256 _prlAmount)
     {
+        /// @dev Exit the Aura Vault and unstake the BPT.
+        _exitAuraVaultAndUnstake(_bptAmount, _bptAmountSlashed);
+
         uint256[] memory minAmountsOut = new uint256[](2);
         minAmountsOut[0] = _minWethAmount;
         minAmountsOut[1] = _minPrlAmount;
@@ -333,20 +366,23 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
             (minAmountsOut[0], minAmountsOut[1]) = (minAmountsOut[1], minAmountsOut[0]);
         }
 
-        /// @dev withdraw from aura
-        AURA_VAULT.withdrawAndUnwrap(_bptAmount + _bptAmountSlashed, false);
-
-        // Transfer the slash amount of BPT to the fee receiver
-        if (_bptAmountSlashed > 0) {
-            BPT.safeTransfer(feeReceiver, _bptAmountSlashed);
-        }
-
         BPT.approve(address(BALANCER_ROUTER), _bptAmount);
 
         BALANCER_ROUTER.removeLiquidityProportional(address(BPT), _bptAmount, minAmountsOut, false, "");
 
         _prlAmount = PRL.balanceOf(address(this));
         _wethAmount = WETH.balanceOf(address(this));
+    }
+
+    /// @notice Exit the Aura Vault and unstake the BPT.
+    /// @param _amount The amount of Aura BPT to unstake.
+    /// @param _amountSlashed The amount of Aura BPT to slash.
+    function _exitAuraVaultAndUnstake(uint256 _amount, uint256 _amountSlashed) internal {
+        AURA_VAULT.withdrawAndUnwrap(_amount + _amountSlashed, false);
+        // Transfer the slash amount of BPT to the fee receiver
+        if (_amountSlashed > 0) {
+            BPT.safeTransfer(feeReceiver, _amountSlashed);
+        }
     }
 
     //-------------------------------------------

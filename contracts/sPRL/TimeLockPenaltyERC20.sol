@@ -59,8 +59,8 @@ contract TimeLockPenaltyERC20 is ERC20Permit, AccessManaged, Pausable, Reentranc
     address public feeReceiver;
     /// @notice The duration of the time lock.
     uint64 public timeLockDuration;
-    /// @notice The amount of assets that are in unlocking state.
-    uint256 public unlockingAssets;
+    /// @notice The amount of underlying tokens that are in unlocking state.
+    uint256 public unlockingAmount;
     /// @notice The penalties percentage that will be applied at request time.
     uint256 public startPenaltyPercentage;
     /// @notice Mapping of user to their withdrawal requests.
@@ -77,10 +77,10 @@ contract TimeLockPenaltyERC20 is ERC20Permit, AccessManaged, Pausable, Reentranc
     /// @param newTimeLock The new time lock duration.
     event TimeLockUpdated(uint256 oldTimeLock, uint256 newTimeLock);
 
-    /// @notice Emitted when a user requests to unlock assets.
+    /// @notice Emitted when a user requests to withdraw assets.
     /// @param id The ID of the request.
-    /// @param user The user that requested the unlock.
-    event RequestedUnlocking(uint256 id, address user, uint256 amount);
+    /// @param user The user that requested the withdraw.
+    event WithdrawalRequested(uint256 id, address user, uint256 amount);
 
     /// @notice Emitted when a user withdraws assets
     /// @param id The ID of the request
@@ -103,7 +103,7 @@ contract TimeLockPenaltyERC20 is ERC20Permit, AccessManaged, Pausable, Reentranc
     /// @param id The ID of the request.
     /// @param user The user that cancelled the request.
     /// @param amount The amount of assets cancelled.
-    event CancelledWithdrawalRequest(uint256 id, address user, uint256 amount);
+    event WithdrawalRequestCancelled(uint256 id, address user, uint256 amount);
 
     /// @notice Emitted when the fee receiver is updated.
     /// @param newFeeReceiver The new fee receiver.
@@ -168,64 +168,6 @@ contract TimeLockPenaltyERC20 is ERC20Permit, AccessManaged, Pausable, Reentranc
     // External functions
     //-------------------------------------------
 
-    /// @notice Deposit assets into the contract and mint the equivalent amount of tokens.
-    /// @param _assetAmount The amount of assets to deposit.
-    function deposit(uint256 _assetAmount) external virtual whenNotPaused nonReentrant {
-        underlying.safeTransferFrom(msg.sender, address(this), _assetAmount);
-        _deposit(_assetAmount);
-    }
-
-    /// @notice Deposit assets into the contract using ERC20Permit and mint the equivalent amount of tokens
-    /// @param _assetAmount The amount of assets to deposit
-    /// @param _deadline The deadline for the permit.
-    /// @param _v The v value of the permit signature.
-    /// @param _r The r value of the permit signature.
-    /// @param _s The s value of the permit signature.
-    function depositWithPermit(
-        uint256 _assetAmount,
-        uint256 _deadline,
-        uint8 _v,
-        bytes32 _r,
-        bytes32 _s
-    )
-        external
-        whenNotPaused
-        nonReentrant
-    {
-        // @dev using try catch to avoid reverting the transaction in case of front-running
-        try IERC20Permit(address(underlying)).permit(msg.sender, address(this), _assetAmount, _deadline, _v, _r, _s) {
-        } catch { }
-        underlying.safeTransferFrom(msg.sender, address(this), _assetAmount);
-        _deposit(_assetAmount);
-    }
-
-    /// @notice Withdraw multiple withdrawal requests.
-    /// @param _ids The IDs of the withdrawal requests to withdraw.
-    function withdraw(uint256[] calldata _ids) external nonReentrant {
-        uint256 totalAmountWithdrawn;
-        uint256 totalFeeAmount;
-        uint256 i = 0;
-        for (; i < _ids.length; ++i) {
-            (uint256 amountWithdrawn, uint256 feeAmount) = _withdraw(_ids[i]);
-            totalAmountWithdrawn += amountWithdrawn;
-            totalFeeAmount += feeAmount;
-        }
-        unlockingAssets = unlockingAssets - totalAmountWithdrawn - totalFeeAmount;
-        if (totalFeeAmount > 0) {
-            underlying.safeTransfer(feeReceiver, totalFeeAmount);
-        }
-        underlying.safeTransfer(msg.sender, totalAmountWithdrawn);
-    }
-
-    /// @notice Allow users to emergency withdraw assets without penalties.
-    /// @dev This function can only be called when the contract is paused.
-    /// @param _unlockingAmount The amount of assets to unlock.
-    function emergencyWithdraw(uint256 _unlockingAmount) external whenPaused nonReentrant {
-        _burn(msg.sender, _unlockingAmount);
-        emit EmergencyWithdraw(msg.sender, _unlockingAmount);
-        underlying.safeTransfer(msg.sender, _unlockingAmount);
-    }
-
     /// @notice Request to withdraw assets from the contract.
     /// @param _unlockingAmount The amount of assets to unlock.
     function requestWithdraw(uint256 _unlockingAmount) external {
@@ -239,9 +181,9 @@ contract TimeLockPenaltyERC20 is ERC20Permit, AccessManaged, Pausable, Reentranc
         request.releaseTime = uint64(block.timestamp) + timeLockDuration;
         request.status = WITHDRAW_STATUS.UNLOCKING;
 
-        unlockingAssets += _unlockingAmount;
+        unlockingAmount += _unlockingAmount;
 
-        emit RequestedUnlocking(id, msg.sender, _unlockingAmount);
+        emit WithdrawalRequested(id, msg.sender, _unlockingAmount);
     }
 
     /// @notice Cancel multiple withdrawal requests.
@@ -343,18 +285,18 @@ contract TimeLockPenaltyERC20 is ERC20Permit, AccessManaged, Pausable, Reentranc
     // Private/Internal functions
     //-------------------------------------------
 
-    /// @notice Deposit assets into the contract and mint the equivalent amount of tokens.
-    /// @param _assetAmount The amount of assets to deposit.
-    function _deposit(uint256 _assetAmount) internal {
-        emit Deposited(msg.sender, _assetAmount);
-        _mint(msg.sender, _assetAmount);
+    /// @notice Mint the equivalent amount of underlying tokens deposited.
+    /// @param _amount The amount of underlying tokens deposited.
+    function _deposit(uint256 _amount) internal {
+        emit Deposited(msg.sender, _amount);
+        _mint(msg.sender, _amount);
     }
 
     /// @notice Withdraw assets from the contract
     /// @param _id The ID of the withdrawal request.
-    /// @return withdrawAmount The amount of assets user received.
+    /// @return amount The amount of assets user received.
     /// @return slashAmount The amount of assets that were slashed.
-    function _withdraw(uint256 _id) internal returns (uint256 withdrawAmount, uint256 slashAmount) {
+    function _withdraw(uint256 _id) internal returns (uint256 amount, uint256 slashAmount) {
         WithdrawalRequest storage request = userVsWithdrawals[msg.sender][_id];
 
         if (request.status != WITHDRAW_STATUS.UNLOCKING) {
@@ -362,10 +304,26 @@ contract TimeLockPenaltyERC20 is ERC20Permit, AccessManaged, Pausable, Reentranc
         }
 
         slashAmount = _calculateFee(request.amount, request.requestTime, request.releaseTime);
-        withdrawAmount = request.amount - slashAmount;
+        amount = request.amount - slashAmount;
         request.status = WITHDRAW_STATUS.RELEASED;
 
-        emit Withdraw(_id, msg.sender, withdrawAmount, slashAmount);
+        emit Withdraw(_id, msg.sender, amount, slashAmount);
+    }
+
+    /// @notice Withdraw multiple withdrawal requests.
+    /// @param _ids The IDs of the withdrawal requests to withdraw.
+    /// @return totalAmountWithdrawn The total amount of assets withdrawn.
+    /// @return totalSlashAmount The total amount of assets that were slashed.
+    function _withdrawMultiple(uint256[] calldata _ids)
+        internal
+        returns (uint256 totalAmountWithdrawn, uint256 totalSlashAmount)
+    {
+        uint256 i = 0;
+        for (; i < _ids.length; ++i) {
+            (uint256 amountWithdrawn, uint256 slashAmount) = _withdraw(_ids[i]);
+            totalAmountWithdrawn += amountWithdrawn;
+            totalSlashAmount += slashAmount;
+        }
     }
 
     /// @notice Cancel a withdrawal request.
@@ -377,12 +335,12 @@ contract TimeLockPenaltyERC20 is ERC20Permit, AccessManaged, Pausable, Reentranc
         }
         request.status = WITHDRAW_STATUS.CANCELLED;
 
-        uint256 _assetAmount = request.amount;
-        unlockingAssets -= _assetAmount;
+        uint256 _amount = request.amount;
+        unlockingAmount -= _amount;
 
-        emit CancelledWithdrawalRequest(_id, msg.sender, _assetAmount);
+        emit WithdrawalRequestCancelled(_id, msg.sender, _amount);
 
-        _mint(msg.sender, _assetAmount);
+        _mint(msg.sender, _amount);
     }
 
     /// @notice Calculate the fee amount that will be slashed from the withdrawal amount.

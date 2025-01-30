@@ -21,7 +21,7 @@ contract TimeLockPenaltyERC20_Constructor_Integrations_Test is Base_Test {
         assertEq(address(timeLockPenaltyERC20.underlying()), address(par));
         assertEq(timeLockPenaltyERC20.timeLockDuration(), DEFAULT_TIME_LOCK_DURATION);
         assertEq(timeLockPenaltyERC20.startPenaltyPercentage(), DEFAULT_PENALTY_PERCENTAGE);
-        assertEq(timeLockPenaltyERC20.unlockingAssets(), 0);
+        assertEq(timeLockPenaltyERC20.unlockingAmount(), 0);
         assertEq(timeLockPenaltyERC20.feeReceiver(), users.daoTreasury.addr);
         assertEq(timeLockPenaltyERC20.name(), name);
         assertEq(timeLockPenaltyERC20.symbol(), symbol);
