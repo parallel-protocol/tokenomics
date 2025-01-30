@@ -21,7 +21,7 @@ import { RewardMerkleDistributor } from "contracts/rewardMerkleDistributor/Rewar
 
 import { TimeLockPenaltyERC20 } from "contracts/sPRL/TimeLockPenaltyERC20.sol";
 
-import { IBalancerVault } from "contracts/interfaces/IBalancerV3Vault.sol";
+import { IBalancerV3Router } from "contracts/interfaces/IBalancerV3Router.sol";
 import { IWrappedNative } from "contracts/interfaces/IWrappedNative.sol";
 import {
     IAuraBoosterLite,
@@ -40,7 +40,7 @@ import {
     VirtualBalanceRewardPoolMock,
     AuraStashTokenMock
 } from "test/mocks/AuraMock.sol";
-import { BalancerVaultMock } from "test/mocks/BalancerVaultMock.sol";
+import { BalancerV3RouterMock } from "test/mocks/BalancerV3RouterMock.sol";
 
 import { SigUtils } from "./SigUtils.sol";
 
@@ -60,7 +60,7 @@ abstract contract Deploys is Test {
 
     BridgeableTokenMock internal bridgeableTokenMock;
     ReenteringMockToken internal reenterToken;
-    BalancerVaultMock internal balancerVaultMock;
+    BalancerV3RouterMock internal balancerV3RouterMock;
 
     AuraBoosterLiteMock internal auraBoosterLiteMock;
     AuraRewardPoolMock internal auraRewardPoolMock;
@@ -153,7 +153,7 @@ abstract contract Deploys is Test {
         address _accessManager,
         uint256 _startPenaltyPercentage,
         uint64 _timeLockDuration,
-        IBalancerVault _balancerVault,
+        IBalancerV3Router _balancerRouter,
         IAuraBoosterLite _auraBoosterLite,
         IAuraRewardPool _auraVault,
         IERC20 _balancerBPT,
@@ -169,7 +169,7 @@ abstract contract Deploys is Test {
             _accessManager,
             _startPenaltyPercentage,
             _timeLockDuration,
-            _balancerVault,
+            _balancerRouter,
             _auraBoosterLite,
             _auraVault,
             _balancerBPT,
@@ -246,8 +246,8 @@ abstract contract Deploys is Test {
     )
         internal
     {
-        balancerVaultMock = new BalancerVaultMock(_tokens, _bpt);
-        vm.label({ account: address(balancerVaultMock), newLabel: "BalancerVaultMock" });
+        balancerV3RouterMock = new BalancerV3RouterMock(_tokens, _bpt);
+        vm.label({ account: address(balancerV3RouterMock), newLabel: "BalancerV3RouterMock" });
 
         auraStashTokenMock = new AuraStashTokenMock(_extraReward);
         vm.label({ account: address(auraStashTokenMock), newLabel: "AuraStashTokenMock" });

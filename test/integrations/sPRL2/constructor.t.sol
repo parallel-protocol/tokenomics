@@ -11,7 +11,7 @@ contract SPRL2_Constructor_Integrations_Test is Base_Test {
             address(accessManager),
             DEFAULT_PENALTY_PERCENTAGE,
             DEFAULT_TIME_LOCK_DURATION,
-            IBalancerVault(address(balancerVaultMock)),
+            IBalancerV3Router(address(balancerV3RouterMock)),
             IAuraBoosterLite(address(auraBoosterLiteMock)),
             IAuraRewardPool(address(auraRewardPoolMock)),
             IERC20(address(bpt)),
@@ -26,7 +26,7 @@ contract SPRL2_Constructor_Integrations_Test is Base_Test {
         assertEq(sprl2.feeReceiver(), users.daoTreasury.addr);
         assertEq(sprl2.name(), "Stake 20WETH-80PRL Aura Deposit Vault");
         assertEq(sprl2.symbol(), "sPRL2");
-        assertEq(address(sprl2.BALANCER_VAULT()), address(balancerVaultMock));
+        assertEq(address(sprl2.BALANCER_ROUTER()), address(balancerV3RouterMock));
         assertEq(address(sprl2.AURA_BOOSTER_LITE()), address(auraBoosterLiteMock));
         assertEq(address(sprl2.AURA_VAULT()), address(auraRewardPoolMock));
         assertEq(address(sprl2.BPT()), address(bpt));

@@ -45,7 +45,7 @@ abstract contract Integrations_Test is Base_Test {
             address(accessManager),
             DEFAULT_PENALTY_PERCENTAGE,
             DEFAULT_TIME_LOCK_DURATION,
-            balancerVaultMock,
+            balancerV3RouterMock,
             auraBoosterLiteMock,
             auraRewardPoolMock,
             bpt,

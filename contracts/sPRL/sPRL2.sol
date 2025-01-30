@@ -7,7 +7,7 @@ import { Address } from "@openzeppelin/contracts/utils/Address.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ERC20Votes } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
 
-import { IBalancerVault } from "contracts/interfaces/IBalancerV3Vault.sol";
+import { IBalancerV3Router } from "contracts/interfaces/IBalancerV3Router.sol";
 import {
     IAuraBoosterLite,
     IVirtualBalanceRewardPool,
@@ -29,8 +29,8 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
     // Storage
     //-------------------------------------------
 
-    /// @notice The Balancer V3 vault.
-    IBalancerVault public immutable BALANCER_VAULT;
+    /// @notice The Balancer V3 router.
+    IBalancerV3Router public immutable BALANCER_ROUTER;
     /// @notice The Aura Booster Lite contract.
     IAuraBoosterLite public immutable AURA_BOOSTER_LITE;
     /// @notice The Aura Vault contract.
@@ -75,7 +75,7 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
     /// @param _accessManager The address of the access manager.
     /// @param _startPenaltyPercentage The start penalty percentage.
     /// @param _timeLockDuration The time lock duration.
-    /// @param _balancerVault The address of the Balancer V3 vault.
+    /// @param _balancerRouter The address of the Balancer V3 router.
     /// @param _auraBoosterLite The address of the Aura Booster Lite contract.
     /// @param _auraVault The address of the Aura Vault contract.
     /// @param _balancerBPT The address of the Balancer BPT token.
@@ -87,7 +87,7 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
         address _accessManager,
         uint256 _startPenaltyPercentage,
         uint64 _timeLockDuration,
-        IBalancerVault _balancerVault,
+        IBalancerV3Router _balancerRouter,
         IAuraBoosterLite _auraBoosterLite,
         IAuraRewardPool _auraVault,
         IERC20 _balancerBPT,
@@ -104,7 +104,7 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
             _timeLockDuration
         )
     {
-        BALANCER_VAULT = _balancerVault;
+        BALANCER_ROUTER = _balancerRouter;
         AURA_BOOSTER_LITE = _auraBoosterLite;
         AURA_VAULT = _auraVault;
         PRL = _prl;
@@ -272,32 +272,21 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
             (maxAmountsIn[0], maxAmountsIn[1]) = (maxAmountsIn[1], maxAmountsIn[0]);
         }
 
-        /// @dev Set deposit params
-        IBalancerVault.AddLiquidityParams memory params = IBalancerVault.AddLiquidityParams({
-            pool: address(BPT),
-            to: address(this),
-            maxAmountsIn: maxAmountsIn,
-            minBptAmountOut: _exactBptAmount,
-            kind: IBalancerVault.AddLiquidityKind.PROPORTIONAL,
-            userData: ""
-        });
-
         /// @dev Approve tokens.
-        PRL.approve(address(BALANCER_VAULT), _maxPrlAmount);
-        WETH.approve(address(BALANCER_VAULT), _maxEthAmount);
+        PRL.approve(address(BALANCER_ROUTER), _maxPrlAmount);
+        WETH.approve(address(BALANCER_ROUTER), _maxEthAmount);
 
         /// @dev Wrap ETH.
         if (_isEth) {
             WETH.deposit{ value: _maxEthAmount }();
         }
-
         /// @dev Deposit into Balancer V3
-        (amountsIn, bptAmount,) = BALANCER_VAULT.addLiquidity(params);
-
-        BPT.approve(address(AURA_BOOSTER_LITE), bptAmount);
+        uint256[] memory _amountsIn =
+            BALANCER_ROUTER.addLiquidityProportional(address(BPT), maxAmountsIn, _exactBptAmount, false, "");
 
         /// @dev Deposit into Aura
-        if (!AURA_BOOSTER_LITE.deposit(AURA_POOL_PID, bptAmount, true)) revert DepositFailed();
+        BPT.approve(address(AURA_BOOSTER_LITE), _exactBptAmount);
+        if (!AURA_BOOSTER_LITE.deposit(AURA_POOL_PID, _exactBptAmount, true)) revert DepositFailed();
 
         /// @dev Return any remaining PRL.
         uint256 prlBalanceToReturn = PRL.balanceOf(address(this));
@@ -315,6 +304,7 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
                 WETH.transfer(msg.sender, wethBalanceToReturn);
             }
         }
+        return (_amountsIn, _exactBptAmount);
     }
 
     /// @notice Exit the pool.
@@ -343,16 +333,9 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
         /// @dev withdraw from aura
         AURA_BOOSTER_LITE.withdraw(AURA_POOL_PID, _bptAmount);
 
-        BPT.approve(address(BALANCER_VAULT), _bptAmount);
-        IBalancerVault.RemoveLiquidityParams memory params = IBalancerVault.RemoveLiquidityParams({
-            pool: address(BPT),
-            from: address(this),
-            maxBptAmountIn: _bptAmount,
-            minAmountsOut: minAmountsOut,
-            kind: IBalancerVault.RemoveLiquidityKind.PROPORTIONAL,
-            userData: ""
-        });
-        BALANCER_VAULT.removeLiquidity(params);
+        BPT.approve(address(BALANCER_ROUTER), _bptAmount);
+
+        BALANCER_ROUTER.removeLiquidityProportional(address(BPT), _bptAmount, minAmountsOut, false, "");
 
         _prlAmount = PRL.balanceOf(address(this));
         _wethAmount = WETH.balanceOf(address(this));
