@@ -8,7 +8,7 @@ contract TimeLockPenaltyERC20_Constructor_Integrations_Test is Base_Test {
     string constant symbol = "TLPERC20";
 
     function test_TimeLockPenaltyERC20_Constructor() external {
-        timeLockPenaltyERC20 = new TimeLockPenaltyERC20(
+        timeLockPenaltyERC20 = new TimeLockPenaltyERC20Mock(
             name,
             symbol,
             address(par),
@@ -32,7 +32,7 @@ contract TimeLockPenaltyERC20_Constructor_Integrations_Test is Base_Test {
         vm.expectRevert(
             abi.encodeWithSelector(TimeLockPenaltyERC20.TimelockOutOfRange.selector, wrongTimeLockDuration)
         );
-        new TimeLockPenaltyERC20(
+        new TimeLockPenaltyERC20Mock(
             name,
             symbol,
             address(par),
@@ -48,7 +48,7 @@ contract TimeLockPenaltyERC20_Constructor_Integrations_Test is Base_Test {
         vm.expectRevert(
             abi.encodeWithSelector(TimeLockPenaltyERC20.TimelockOutOfRange.selector, wrongTimeLockDuration)
         );
-        new TimeLockPenaltyERC20(
+        new TimeLockPenaltyERC20Mock(
             name,
             symbol,
             address(par),
@@ -66,7 +66,7 @@ contract TimeLockPenaltyERC20_Constructor_Integrations_Test is Base_Test {
         vm.expectRevert(
             abi.encodeWithSelector(TimeLockPenaltyERC20.PercentageOutOfRange.selector, wrongMaxPenaltyPercentage)
         );
-        new TimeLockPenaltyERC20(
+        new TimeLockPenaltyERC20Mock(
             name,
             symbol,
             address(par),

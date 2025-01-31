@@ -2,13 +2,13 @@
 pragma solidity 0.8.25;
 
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import { IERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 import { ERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import { ERC20Votes } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
+import { IERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { AccessManaged } from "@openzeppelin/contracts/access/manager/AccessManaged.sol";
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
-import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { Nonces } from "@openzeppelin/contracts/utils/Nonces.sol";
 
 import { MathsLib } from "contracts/libraries/MathsLib.sol";
 
@@ -18,8 +18,7 @@ import { MathsLib } from "contracts/libraries/MathsLib.sol";
 /// left.
 /// @author Cooper Labs
 /// @custom:contact security@cooperlabs.xyz
-contract TimeLockPenaltyERC20 is ERC20Permit, AccessManaged, Pausable, ReentrancyGuard {
-    using SafeERC20 for IERC20;
+abstract contract TimeLockPenaltyERC20 is ERC20Permit, AccessManaged, Pausable, ERC20Votes {
     using MathsLib for *;
 
     //-------------------------------------------
@@ -292,6 +291,22 @@ contract TimeLockPenaltyERC20 is ERC20Permit, AccessManaged, Pausable, Reentranc
         _mint(msg.sender, _amount);
     }
 
+    /// @notice Withdraw multiple withdrawal requests.
+    /// @param _ids The IDs of the withdrawal requests to withdraw.
+    /// @return totalAmountWithdrawn The total amount of assets withdrawn.
+    /// @return totalSlashAmount The total amount of assets that were slashed.
+    function _withdrawMultiple(uint256[] calldata _ids)
+        internal
+        returns (uint256 totalAmountWithdrawn, uint256 totalSlashAmount)
+    {
+        uint256 i = 0;
+        for (; i < _ids.length; ++i) {
+            (uint256 amountWithdrawn, uint256 slashAmount) = _withdraw(_ids[i]);
+            totalAmountWithdrawn += amountWithdrawn;
+            totalSlashAmount += slashAmount;
+        }
+    }
+
     /// @notice Withdraw assets from the contract
     /// @param _id The ID of the withdrawal request.
     /// @return amount The amount of assets user received.
@@ -308,22 +323,6 @@ contract TimeLockPenaltyERC20 is ERC20Permit, AccessManaged, Pausable, Reentranc
         request.status = WITHDRAW_STATUS.RELEASED;
 
         emit Withdraw(_id, msg.sender, amount, slashAmount);
-    }
-
-    /// @notice Withdraw multiple withdrawal requests.
-    /// @param _ids The IDs of the withdrawal requests to withdraw.
-    /// @return totalAmountWithdrawn The total amount of assets withdrawn.
-    /// @return totalSlashAmount The total amount of assets that were slashed.
-    function _withdrawMultiple(uint256[] calldata _ids)
-        internal
-        returns (uint256 totalAmountWithdrawn, uint256 totalSlashAmount)
-    {
-        uint256 i = 0;
-        for (; i < _ids.length; ++i) {
-            (uint256 amountWithdrawn, uint256 slashAmount) = _withdraw(_ids[i]);
-            totalAmountWithdrawn += amountWithdrawn;
-            totalSlashAmount += slashAmount;
-        }
     }
 
     /// @notice Cancel a withdrawal request.
@@ -363,5 +362,24 @@ contract TimeLockPenaltyERC20 is ERC20Permit, AccessManaged, Pausable, Reentranc
         uint256 lockDuration = _releaseTime - _requestTime;
         uint256 feePercentage = startPenaltyPercentage.mulDivUp(timeLeft, lockDuration);
         feeAmount = _amount.wadMulUp(feePercentage);
+    }
+
+    //-------------------------------------------
+    // Overrides
+    //-------------------------------------------
+
+    /// @notice Update the balances of the token.
+    /// @param from The address to transfer from.
+    /// @param to The address to transfer to.
+    /// @param value The amount to transfer.
+    function _update(address from, address to, uint256 value) internal override(ERC20, ERC20Votes) {
+        super._update(from, to, value);
+    }
+
+    /// @notice Get the nonce for an address.
+    /// @param owner The address to get the nonce for.
+    /// @return The nonce for the address.
+    function nonces(address owner) public view virtual override(ERC20Permit, Nonces) returns (uint256) {
+        return super.nonces(owner);
     }
 }

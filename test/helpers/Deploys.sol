@@ -19,8 +19,6 @@ import { sPRL2 } from "contracts/sPRL/sPRL2.sol";
 
 import { RewardMerkleDistributor } from "contracts/rewardMerkleDistributor/RewardMerkleDistributor.sol";
 
-import { TimeLockPenaltyERC20 } from "contracts/sPRL/TimeLockPenaltyERC20.sol";
-
 import { IBalancerV3Router } from "contracts/interfaces/IBalancerV3Router.sol";
 import { IWrappedNative } from "contracts/interfaces/IWrappedNative.sol";
 import {
@@ -30,6 +28,7 @@ import {
     IAuraStashToken
 } from "contracts/interfaces/IAura.sol";
 
+import { TimeLockPenaltyERC20Mock } from "test/mocks/TimeLockPenaltyERC20Mock.sol";
 import { ERC20Mock } from "test/mocks/ERC20Mock.sol";
 import { WrappedNativeMock } from "test/mocks/WrapperNativeMock.sol";
 import { ReenteringMockToken } from "test/mocks/ReenteringMockToken.sol";
@@ -75,7 +74,7 @@ abstract contract Deploys is Test {
 
     sPRL2 internal sprl2;
     sPRL1 internal sprl1;
-    TimeLockPenaltyERC20 internal timeLockPenaltyERC20;
+    TimeLockPenaltyERC20Mock internal timeLockPenaltyERC20;
 
     function _deployAccessManager(address _initialAdmin) internal returns (AccessManager) {
         AccessManager _accessManager = new AccessManager(_initialAdmin);
@@ -117,9 +116,9 @@ abstract contract Deploys is Test {
         uint64 _timeLockDuration
     )
         internal
-        returns (TimeLockPenaltyERC20)
+        returns (TimeLockPenaltyERC20Mock)
     {
-        TimeLockPenaltyERC20 _timeLockPenaltyERC20 = new TimeLockPenaltyERC20(
+        TimeLockPenaltyERC20Mock _timeLockPenaltyERC20 = new TimeLockPenaltyERC20Mock(
             "TimeLockPenaltyERC20",
             "TLPERC20",
             _underlying,
