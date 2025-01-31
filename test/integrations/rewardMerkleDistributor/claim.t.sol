@@ -193,7 +193,6 @@ contract RewardMerkleDistributor_Claim_Integrations_Test is Integrations_Test {
 
     modifier SetupTotalEpochRewardAmountClaimedExceedsEpochTotalAmount() {
         vm.startPrank(users.admin.addr);
-        console2.log(par.balanceOf(address(rewardMerkleDistributor)));
         firstEpochMerkleDrop = RewardMerkleDistributor.MerkleDrop({
             root: firstEpochRoot,
             totalAmount: firstClaimRewardsAmount - 1,
