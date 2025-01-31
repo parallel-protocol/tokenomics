@@ -28,6 +28,19 @@ contract SPRL2_Withdraw_Integrations_Test is Integrations_Test {
         _;
     }
 
+    function test_sPRL2_WithdrawBPT_SingleRequest() external requestSingleWithdraw {
+        assertEq(sprl2.balanceOf(users.alice.addr), INITIAL_AMOUNT - WITHDRAW_AMOUNT);
+        skip(sprl2.timeLockDuration());
+
+        uint256 aliceBalanceBefore = bpt.balanceOf(users.alice.addr);
+        uint256[] memory requestIds = new uint256[](1);
+        requestIds[0] = 0;
+        sprl2.withdrawBPT(requestIds);
+
+        uint256 aliceBalanceAfter = bpt.balanceOf(users.alice.addr);
+        assertEq(aliceBalanceAfter - aliceBalanceBefore, WITHDRAW_AMOUNT);
+    }
+
     function test_sPRL2_WithdrawPRLAndWeth_SingleRequest() external requestSingleWithdraw {
         assertEq(sprl2.balanceOf(users.alice.addr), INITIAL_AMOUNT - WITHDRAW_AMOUNT);
         skip(sprl2.timeLockDuration());
@@ -48,6 +61,22 @@ contract SPRL2_Withdraw_Integrations_Test is Integrations_Test {
         sprl2.requestWithdraw(WITHDRAW_AMOUNT);
         sprl2.requestWithdraw(WITHDRAW_AMOUNT);
         _;
+    }
+
+    function test_sPRL2_WithdrawBPT_MultipleRequests() external requestMultiWithdraw {
+        uint256 withdrawAmount = WITHDRAW_AMOUNT * 3;
+        assertEq(sprl2.balanceOf(users.alice.addr), INITIAL_AMOUNT - withdrawAmount);
+        skip(sprl2.timeLockDuration());
+
+        uint256 aliceBalanceBefore = bpt.balanceOf(users.alice.addr);
+        uint256[] memory requestIds = new uint256[](3);
+        requestIds[0] = 0;
+        requestIds[1] = 1;
+        requestIds[2] = 2;
+        sprl2.withdrawBPT(requestIds);
+
+        uint256 aliceBalanceAfter = bpt.balanceOf(users.alice.addr);
+        assertEq(aliceBalanceAfter - aliceBalanceBefore, withdrawAmount);
     }
 
     function test_sPRL2_WithdrawPRLAndWeth_MultipleRequests() external requestMultiWithdraw {
