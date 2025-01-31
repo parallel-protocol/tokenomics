@@ -264,7 +264,7 @@ contract sPRL2 is TimeLockPenaltyERC20 {
     /// @notice Allow users to emergency withdraw assets without penalties.
     /// @dev This function can only be called when the contract is paused.
     /// @param _amount The amount of assets to unlock.
-    function emergencyWithdraw(uint256 _amount) external whenPaused {
+    function emergencyWithdraw(uint256 _amount) external whenPaused nonReentrant {
         _burn(msg.sender, _amount);
         _exitAuraVaultAndUnstake(_amount, 0);
         emit EmergencyWithdraw(msg.sender, _amount);
