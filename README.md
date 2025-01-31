@@ -25,7 +25,7 @@ The Parallel Tokenomics system consists of smart contracts that enable:
 - PRL tokens for staking (sPRL2 requires Balancer V3 and Aura.finance)
 - ETH/WETH for sPRL2 liquidity provision
 - Expected supported networks:
-  - sPRL(s) tokens: Mainnet
+  - sPRL(s) tokens: Mainnet (as BalancerV3 and Aura.finance are required)
   - RewardMerkleDistributor: Mainnet
   - MainFeeDistributor: Mainnet
   - SideChainFeeDistributor: Polygon, Fantom
