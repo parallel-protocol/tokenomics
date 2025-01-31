@@ -70,7 +70,7 @@ contract SideChainFeeCollector is FeeCollectorCore {
     }
 
     //-------------------------------------------
-    // External functions
+    // AccessManaged functions
     //-------------------------------------------
 
     /// @notice Release the fee token to the MainFeeDistributor on the receiving chain.
@@ -102,10 +102,6 @@ contract SideChainFeeCollector is FeeCollectorCore {
         emit FeeReleased(msg.sender, amountSent);
         bridgeableToken.send{ value: msg.value }(sendParam, MessagingFee(msg.value, 0), payable(msg.sender));
     }
-
-    //-------------------------------------------
-    // AccessManaged functions
-    //-------------------------------------------
 
     /// @notice Update the destination receiver address.
     /// @param _newDestinationReceiver The new destination receiver address.
