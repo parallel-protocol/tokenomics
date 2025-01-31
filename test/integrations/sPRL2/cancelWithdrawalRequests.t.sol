@@ -5,7 +5,7 @@ import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 
 import "test/Integrations.t.sol";
 
-contract SPRL1_CancelWithdrawalRequests_Integrations_Test is Integrations_Test {
+contract SPRL2_CancelWithdrawalRequests_Integrations_Test is Integrations_Test {
     function setUp() public override {
         super.setUp();
         vm.startPrank(users.alice.addr);

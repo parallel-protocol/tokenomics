@@ -7,16 +7,11 @@ import { ERC20Mock } from "./ERC20Mock.sol";
 
 contract BalancerV3RouterMock is IBalancerV3Router {
     address[2] public tokens;
-    uint256[2] public balances;
     ERC20Mock public bpt;
 
     constructor(address[2] memory _tokens, address _bpt) {
         tokens = _tokens;
         bpt = ERC20Mock(_bpt);
-    }
-
-    function setBalances(uint256[2] memory _balances) public {
-        balances = _balances;
     }
 
     function addLiquidityProportional(
