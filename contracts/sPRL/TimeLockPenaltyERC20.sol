@@ -5,6 +5,7 @@ import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { ERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import { ERC20Votes } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import { IERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { AccessManaged } from "@openzeppelin/contracts/access/manager/AccessManaged.sol";
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
@@ -18,7 +19,7 @@ import { MathsLib } from "contracts/libraries/MathsLib.sol";
 /// left.
 /// @author Cooper Labs
 /// @custom:contact security@cooperlabs.xyz
-abstract contract TimeLockPenaltyERC20 is ERC20Permit, AccessManaged, Pausable, ERC20Votes {
+abstract contract TimeLockPenaltyERC20 is ERC20, ERC20Permit, ERC20Votes, AccessManaged, Pausable, ReentrancyGuard {
     using MathsLib for *;
 
     //-------------------------------------------

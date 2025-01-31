@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-import { TimeLockPenaltyERC20, IERC20, ERC20, IERC20Permit, ERC20Permit } from "./TimeLockPenaltyERC20.sol";
-import { Nonces } from "@openzeppelin/contracts/utils/Nonces.sol";
-import { Address } from "@openzeppelin/contracts/utils/Address.sol";
+import { TimeLockPenaltyERC20, IERC20, IERC20Permit } from "./TimeLockPenaltyERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { ERC20Votes } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
+import { Address } from "@openzeppelin/contracts/utils/Address.sol";
 
 import { IBalancerV3Router } from "contracts/interfaces/IBalancerV3Router.sol";
 import {
@@ -22,7 +20,7 @@ import { IWrappedNative } from "contracts/interfaces/IWrappedNative.sol";
 /// @dev Staked into Aura doesn't credit any erc20 tokens to the contract.
 /// @notice sPRL2 is a staking contract that allows users to deposit PRL and WETH into a Balancer V3 pool that is
 /// staked into the Aura Pool.
-contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
+contract sPRL2 is TimeLockPenaltyERC20 {
     using Address for address payable;
     using SafeERC20 for IERC20;
 
@@ -64,6 +62,13 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
     event WithdrawlPRLAndWeth(
         uint256[] requestIds, address user, uint256 prlAmount, uint256 wethAmount, uint256 slashBptAmount
     );
+
+    /// @notice Event emitted when a user withdraws BPT for multiple requests.
+    /// @param requestIds The IDs of the withdrawal requests.
+    /// @param user The address of the user.
+    /// @param bptAmount The amount of BPT received.
+    /// @param slashBptAmount The amount of BPT sent to the fee receiver.
+    event WithdrawlBPT(uint256[] requestIds, address user, uint256 bptAmount, uint256 slashBptAmount);
 
     //-------------------------------------------
     // Errors
@@ -151,13 +156,14 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
     )
         external
         whenNotPaused
+        nonReentrant
         returns (uint256[] memory amountsIn, uint256 bptAmount)
     {
         // @dev using try catch to avoid reverting the transaction in case of front-running
         try IERC20Permit(address(PRL)).permit(msg.sender, address(this), _maxPrlAmount, _deadline, _v, _r, _s) { }
             catch { }
 
-        PRL.transferFrom(msg.sender, address(this), _maxPrlAmount);
+        PRL.safeTransferFrom(msg.sender, address(this), _maxPrlAmount);
         WETH.transferFrom(msg.sender, address(this), _maxWethAmount);
 
         (amountsIn, bptAmount) = _joinPool(_maxPrlAmount, _maxWethAmount, _exactBptAmount, false);
@@ -183,17 +189,27 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
         external
         payable
         whenNotPaused
+        nonReentrant
         returns (uint256[] memory amountsIn, uint256 bptAmount)
     {
         // @dev using try catch to avoid reverting the transaction in case of front-running
         try IERC20Permit(address(PRL)).permit(msg.sender, address(this), _maxPrlAmount, _deadline, _v, _r, _s) { }
             catch { }
 
-        PRL.transferFrom(msg.sender, address(this), _maxPrlAmount);
+        PRL.safeTransferFrom(msg.sender, address(this), _maxPrlAmount);
 
         (amountsIn, bptAmount) = _joinPool(_maxPrlAmount, msg.value, _exactBptAmount, true);
 
         _deposit(bptAmount);
+    }
+
+    /// @notice Withdraw BPT for multiple requests.
+    /// @param _requestIds The request IDs to withdraw from.
+    function withdrawBPT(uint256[] calldata _requestIds) external nonReentrant {
+        (uint256 totalBptAmount, uint256 totalBptAmountSlashed) = _withdrawMultiple(_requestIds);
+        _exitAuraVaultAndUnstake(totalBptAmount, totalBptAmountSlashed);
+        emit WithdrawlBPT(_requestIds, msg.sender, totalBptAmount, totalBptAmountSlashed);
+        BPT.safeTransfer(msg.sender, totalBptAmount);
     }
 
     /// @notice Withdraw PRL and WETH for multiple requests.
@@ -208,20 +224,15 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
         uint256 _minWethAmount
     )
         external
+        nonReentrant
         returns (uint256 prlAmount, uint256 wethAmount)
     {
-        uint256 totalBptAmount;
-        uint256 totalBptAmountSlashed;
-        for (uint8 i; i < _requestIds.length; i++) {
-            (uint256 bptAmount, uint256 slashBptAmount) = _withdraw(_requestIds[i]);
-            totalBptAmount += bptAmount;
-            totalBptAmountSlashed += slashBptAmount;
-        }
+        (uint256 totalBptAmount, uint256 totalBptAmountSlashed) = _withdrawMultiple(_requestIds);
 
         (prlAmount, wethAmount) = _exitPool(totalBptAmount, totalBptAmountSlashed, _minPrlAmount, _minWethAmount);
 
         emit WithdrawlPRLAndWeth(_requestIds, msg.sender, prlAmount, wethAmount, totalBptAmountSlashed);
-        PRL.transfer(msg.sender, prlAmount);
+        PRL.safeTransfer(msg.sender, prlAmount);
         WETH.transfer(msg.sender, wethAmount);
     }
 
@@ -231,7 +242,7 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
         IERC20 mainRewardToken = IERC20(AURA_VAULT.rewardToken());
         uint256 mainRewardBalance = mainRewardToken.balanceOf(address(this));
         if (mainRewardBalance > 0) {
-            mainRewardToken.transfer(feeReceiver, mainRewardBalance);
+            mainRewardToken.safeTransfer(feeReceiver, mainRewardBalance);
         }
 
         address[] memory extraRewards = AURA_VAULT.extraRewards();
@@ -244,7 +255,7 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
                 IERC20 extraRewardToken = IERC20(auraStashToken.baseToken());
                 uint256 rewardBalance = extraRewardToken.balanceOf(address(this));
                 if (rewardBalance > 0) {
-                    extraRewardToken.transfer(feeReceiver, rewardBalance);
+                    extraRewardToken.safeTransfer(feeReceiver, rewardBalance);
                 }
             }
         }
@@ -253,7 +264,7 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
     /// @notice Allow users to emergency withdraw assets without penalties.
     /// @dev This function can only be called when the contract is paused.
     /// @param _amount The amount of assets to unlock.
-    function emergencyWithdraw(uint256 _amount) external whenPaused nonReentrant {
+    function emergencyWithdraw(uint256 _amount) external whenPaused {
         _burn(msg.sender, _amount);
         _exitAuraVaultAndUnstake(_amount, 0);
         emit EmergencyWithdraw(msg.sender, _amount);
@@ -284,13 +295,8 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
         returns (uint256[] memory amountsIn, uint256 bptAmount)
     {
         uint256[] memory maxAmountsIn = new uint256[](2);
-        maxAmountsIn[0] = _maxEthAmount;
-        maxAmountsIn[1] = _maxPrlAmount;
-
-        /// @dev Reverse maxAmountsIn if the pair is reversed
-        if (isReversedBalancerPair) {
-            (maxAmountsIn[0], maxAmountsIn[1]) = (maxAmountsIn[1], maxAmountsIn[0]);
-        }
+        (maxAmountsIn[0], maxAmountsIn[1]) =
+            isReversedBalancerPair ? (_maxPrlAmount, _maxEthAmount) : (_maxEthAmount, _maxPrlAmount);
 
         /// @dev Approve tokens.
         PRL.approve(address(BALANCER_ROUTER), _maxPrlAmount);
@@ -359,12 +365,8 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
         _exitAuraVaultAndUnstake(_bptAmount, _bptAmountSlashed);
 
         uint256[] memory minAmountsOut = new uint256[](2);
-        minAmountsOut[0] = _minWethAmount;
-        minAmountsOut[1] = _minPrlAmount;
-
-        if (isReversedBalancerPair) {
-            (minAmountsOut[0], minAmountsOut[1]) = (minAmountsOut[1], minAmountsOut[0]);
-        }
+        (minAmountsOut[0], minAmountsOut[1]) =
+            isReversedBalancerPair ? (_minPrlAmount, _minWethAmount) : (_minWethAmount, _minPrlAmount);
 
         BPT.approve(address(BALANCER_ROUTER), _bptAmount);
 
@@ -383,24 +385,5 @@ contract sPRL2 is TimeLockPenaltyERC20, ERC20Votes {
         if (_amountSlashed > 0) {
             BPT.safeTransfer(feeReceiver, _amountSlashed);
         }
-    }
-
-    //-------------------------------------------
-    // Overrides
-    //-------------------------------------------
-
-    /// @notice Update the balances of the token.
-    /// @param from The address to transfer from.
-    /// @param to The address to transfer to.
-    /// @param value The amount to transfer.
-    function _update(address from, address to, uint256 value) internal override(ERC20, ERC20Votes) {
-        super._update(from, to, value);
-    }
-
-    /// @notice Get the nonce for an address.
-    /// @param owner The address to get the nonce for.
-    /// @return The nonce for the address.
-    function nonces(address owner) public view virtual override(ERC20Permit, Nonces) returns (uint256) {
-        return super.nonces(owner);
     }
 }

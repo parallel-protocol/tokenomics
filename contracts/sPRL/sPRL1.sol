@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-import { TimeLockPenaltyERC20, ERC20, ERC20Permit, IERC20Permit, SafeERC20, IERC20 } from "./TimeLockPenaltyERC20.sol";
-import { ERC20Votes } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
-import { Nonces } from "@openzeppelin/contracts/utils/Nonces.sol";
+import { TimeLockPenaltyERC20, IERC20, IERC20Permit } from "./TimeLockPenaltyERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @title sPRL1
 /// @author Cooper Labs
 /// @custom:contact security@cooperlabs.xyz
 /// @notice sPRL1 is a staking contract that allows users to deposit PRL assets.
-contract sPRL1 is TimeLockPenaltyERC20, ERC20Votes {
+contract sPRL1 is TimeLockPenaltyERC20 {
     using SafeERC20 for IERC20;
 
     string constant NAME = "Stake PRL";
@@ -96,24 +95,5 @@ contract sPRL1 is TimeLockPenaltyERC20, ERC20Votes {
             underlying.safeTransfer(feeReceiver, totalFeeAmount);
         }
         underlying.safeTransfer(msg.sender, totalAmountWithdrawn);
-    }
-
-    //-------------------------------------------
-    // Overrides
-    //-------------------------------------------
-
-    /// @notice Update the balances of the token.
-    /// @param from The address to transfer from.
-    /// @param to The address to transfer to.
-    /// @param value The amount to transfer.
-    function _update(address from, address to, uint256 value) internal override(ERC20, ERC20Votes) {
-        super._update(from, to, value);
-    }
-
-    /// @notice Get the nonce for an address.
-    /// @param owner The address to get the nonce for.
-    /// @return The nonce for the address.
-    function nonces(address owner) public view virtual override(ERC20Permit, Nonces) returns (uint256) {
-        return super.nonces(owner);
     }
 }
