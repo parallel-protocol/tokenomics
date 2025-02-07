@@ -56,8 +56,8 @@ contract MainFeeDistributor is FeeCollectorCore {
     error FeeReceiverZeroAddress();
     /// @notice Thrown when the shares are zero.
     error SharesIsZero();
-    /// @notice Thrown when the fee receiver is already added.
-    error FeeReceiverAlreadyAdded();
+    /// @notice Thrown when the fee receiver is already in the list.
+    error DuplicatedFeeReceiver();
     /// @notice Thrown when there is no fee receivers.
     error NoFeeReceivers();
     /// @notice Thrown when the array length mismatch.
@@ -177,6 +177,7 @@ contract MainFeeDistributor is FeeCollectorCore {
     function _addFeeReceiver(address _feeReceiver, uint256 _shares) internal returns (uint256) {
         if (_feeReceiver == address(0)) revert FeeReceiverZeroAddress();
         if (_shares == 0) revert SharesIsZero();
+        if (shares[_feeReceiver] != 0) revert DuplicatedFeeReceiver();
 
         feeReceivers.push(_feeReceiver);
         shares[_feeReceiver] = _shares;
