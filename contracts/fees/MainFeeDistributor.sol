@@ -134,6 +134,11 @@ contract MainFeeDistributor is FeeCollectorCore {
     function updateFeeReceivers(address[] memory _feeReceivers, uint256[] memory _shares) public restricted {
         if (_feeReceivers.length == 0) revert NoFeeReceivers();
         if (_feeReceivers.length != _shares.length) revert ArrayLengthMismatch();
+
+        /// @dev Distribute the fees before updating the fee receivers.
+        try this.swapLzToken() { } catch { }
+        try this.release() { } catch { }
+
         delete feeReceivers;
 
         uint256 _totalShares = 0;
