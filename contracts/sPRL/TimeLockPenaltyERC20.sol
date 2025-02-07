@@ -264,7 +264,7 @@ abstract contract TimeLockPenaltyERC20 is ERC20, ERC20Permit, ERC20Votes, Access
 
     /// @notice Allow the AccessManager to update the fee receiver address.
     /// @param _newFeeReceiver The new fee receiver.
-    function updateFeeReceiver(address _newFeeReceiver) external restricted {
+    function updateFeeReceiver(address _newFeeReceiver) public virtual restricted {
         emit FeeReceiverUpdated(_newFeeReceiver);
         feeReceiver = _newFeeReceiver;
     }

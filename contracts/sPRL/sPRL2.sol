@@ -237,7 +237,7 @@ contract sPRL2 is TimeLockPenaltyERC20 {
     }
 
     /// @notice Claim rewards from Aura Pool and transfer them to the fee receiver.
-    function claimRewards() external {
+    function claimRewards() public {
         AURA_VAULT.getReward();
         IERC20 mainRewardToken = IERC20(AURA_VAULT.rewardToken());
         uint256 mainRewardBalance = mainRewardToken.balanceOf(address(this));
@@ -269,6 +269,14 @@ contract sPRL2 is TimeLockPenaltyERC20 {
         _exitAuraVaultAndUnstake(_amount, 0);
         emit EmergencyWithdraw(msg.sender, _amount);
         BPT.safeTransfer(msg.sender, _amount);
+    }
+
+    /// @notice Allow the AccessManager to update the fee receiver.
+    /// @dev Override the parent contract function to claim rewards before updating the fee receiver.
+    /// @param _newFeeReceiver The new fee receiver.
+    function updateFeeReceiver(address _newFeeReceiver) public override restricted {
+        claimRewards();
+        super.updateFeeReceiver(_newFeeReceiver);
     }
 
     /// @notice Allow ETH to be received.
