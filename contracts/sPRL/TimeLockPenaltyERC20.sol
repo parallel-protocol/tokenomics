@@ -306,6 +306,7 @@ abstract contract TimeLockPenaltyERC20 is ERC20, ERC20Permit, ERC20Votes, Access
             totalAmountWithdrawn += amountWithdrawn;
             totalSlashAmount += slashAmount;
         }
+        unlockingAmount = unlockingAmount - totalAmountWithdrawn - totalSlashAmount;
     }
 
     /// @notice Withdraw assets from the contract
