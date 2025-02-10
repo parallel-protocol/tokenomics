@@ -115,7 +115,7 @@ contract MainFeeDistributor is FeeCollectorCore {
         uint256 swapAmount = balance > maxSwapAmount ? maxSwapAmount : balance;
 
         emit LzTokenSwapped(swapAmount);
-        IBridgeableToken(address(bridgeableToken)).swapLzTokenToPrincipalToken(swapAmount);
+        IBridgeableToken(address(bridgeableToken)).swapLzTokenToPrincipalToken(address(this), swapAmount);
     }
 
     /// @notice Get the addresses that will receive fees.
