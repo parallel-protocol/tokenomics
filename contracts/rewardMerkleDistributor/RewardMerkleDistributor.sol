@@ -96,8 +96,6 @@ contract RewardMerkleDistributor is AccessManaged, Pausable, ReentrancyGuard {
     error EpochExpired();
     /// @notice Thrown when epoch didn't expired.
     error EpochNotExpired();
-    /// @notice Thrown when there are not enough rewards to distribute for the epoch.
-    error NotEnoughRewards();
     /// @notice Thrown when claim windows didn't not start.
     error NotStarted();
     /// @notice Thrown when totalAmountClaimed for the epoch after a claim will exceed the total amount to distribute.
@@ -177,8 +175,9 @@ contract RewardMerkleDistributor is AccessManaged, Pausable, ReentrancyGuard {
 
     /// @notice Updates the merkleDrop for a specific epoch.
     /// @dev This function can only be called by AccessManager.
+    /// @param _epoch The epoch to update.
+    /// @param _merkleDrop The merkleDrop to update.
     function updateMerkleDrop(uint64 _epoch, MerkleDrop memory _merkleDrop) external restricted {
-        if (_merkleDrop.totalAmount > TOKEN.balanceOf(address(this))) revert NotEnoughRewards();
         if (_merkleDrop.expiryTime - _merkleDrop.startTime < EPOCH_LENGTH) revert EpochExpired();
         merkleDrops[_epoch] = _merkleDrop;
         emit MerkleDropUpdated(

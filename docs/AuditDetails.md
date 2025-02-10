@@ -135,6 +135,12 @@ that off-chain to avoid additional gas cost.
 Aura Pool PID is hardcoded in the sPRL2 contract to reduce constructor parameters and avoid additional gas cost during
 deployment.
 
+### No solvency check in updateMerkleDrop function
+
+The `updateMerkleDrop` function in the RewardMerkleDistributor doesn't check that the contract has enough rewards to
+distribute previous epoch rewards in addition to the new epoch set. We are aware of it and decided to handle this
+off-chain during the rewards calculation.
+
 ## Tests
 
 The contracts are tested using the Hardhat framework with additional testing utilities.
