@@ -20,8 +20,6 @@ abstract contract Base_Test is Test, Deploys, Assertions, Defaults, Utils {
         // Roll the blockchain forward to Monday 1 January 2024 12:00:00 GMT.
         skip(1_704_110_400);
 
-        reenterToken = new ReenteringMockToken("ReenteringToken", "RET");
-
         // Deploy PAR token contract.
         par = _deployERC20Mock("PAR", "PAR", 18);
         // Deploy paUSD token contract.
