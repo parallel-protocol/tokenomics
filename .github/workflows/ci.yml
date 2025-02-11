@@ -60,6 +60,8 @@ jobs:
   test:
     needs: ["lint", "build"]
     runs-on: "ubuntu-latest"
+    env:
+      ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
     steps:
       - name: "Check out the repo"
         uses: "actions/checkout@v4"
