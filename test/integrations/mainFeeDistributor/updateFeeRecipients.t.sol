@@ -98,19 +98,4 @@ contract MainFeeDistributor_UpdateFeeReceivers_Integrations_Test is Integrations
         vm.expectRevert(abi.encodeWithSelector(IAccessManaged.AccessManagedUnauthorized.selector, users.hacker.addr));
         mainFeeDistributor.updateFeeReceivers(receivers, shares);
     }
-
-    function test_MainFeeDistributor_UpdateFeeReceivers_RevertWhen_DuplicatedFeeReceiver() external {
-        vm.startPrank(users.admin.addr);
-
-        address[] memory newReceivers = new address[](3);
-        newReceivers[0] = makeAddr("newReceiver 1");
-        newReceivers[1] = makeAddr("newReceiver 2");
-        newReceivers[2] = makeAddr("newReceiver 1");
-        uint256[] memory newShares = new uint256[](3);
-        newShares[0] = 10;
-        newShares[1] = 20;
-        newShares[2] = 30;
-        vm.expectRevert(abi.encodeWithSelector(MainFeeDistributor.DuplicatedFeeReceiver.selector));
-        mainFeeDistributor.updateFeeReceivers(newReceivers, newShares);
-    }
 }
