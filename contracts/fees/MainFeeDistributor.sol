@@ -56,8 +56,6 @@ contract MainFeeDistributor is FeeCollectorCore {
     error FeeReceiverZeroAddress();
     /// @notice Thrown when the shares are zero.
     error SharesIsZero();
-    /// @notice Thrown when the fee receiver is already in the list.
-    error DuplicatedFeeReceiver();
     /// @notice Thrown when there is no fee receivers.
     error NoFeeReceivers();
     /// @notice Thrown when the array length mismatch.
@@ -129,6 +127,7 @@ contract MainFeeDistributor is FeeCollectorCore {
 
     /// @notice Allow to update the fees receivers list and shares.
     /// @dev This function can only be called by the accessManager.
+    /// @dev Be careful that no duplicate fee receivers are added.
     /// @param _feeReceivers The list of the fee receivers.
     /// @param _shares The list of the shares assigned to the fee receivers.
     function updateFeeReceivers(address[] memory _feeReceivers, uint256[] memory _shares) public restricted {
@@ -177,7 +176,6 @@ contract MainFeeDistributor is FeeCollectorCore {
     function _addFeeReceiver(address _feeReceiver, uint256 _shares) internal returns (uint256) {
         if (_feeReceiver == address(0)) revert FeeReceiverZeroAddress();
         if (_shares == 0) revert SharesIsZero();
-        if (shares[_feeReceiver] != 0) revert DuplicatedFeeReceiver();
 
         feeReceivers.push(_feeReceiver);
         shares[_feeReceiver] = _shares;
