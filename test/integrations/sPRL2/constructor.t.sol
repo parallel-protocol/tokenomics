@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-import "test/Base.t.sol";
+import "test/Integrations.t.sol";
 
-contract SPRL2_Constructor_Integrations_Test is Base_Test {
+contract SPRL2_Constructor_Integrations_Test is Integrations_Test {
     function test_SPRL2_Constructor() external {
         sprl2 = new sPRL2(
             address(auraBpt),
@@ -16,7 +16,8 @@ contract SPRL2_Constructor_Integrations_Test is Base_Test {
             IAuraRewardPool(address(auraRewardPoolMock)),
             IERC20(address(bpt)),
             IERC20(address(prl)),
-            IWrappedNative(address(weth))
+            IWrappedNative(address(weth)),
+            IPermit2(address(permit2))
         );
         assertEq(sprl2.authority(), address(accessManager));
         assertEq(address(sprl2.underlying()), address(auraBpt));
@@ -32,5 +33,6 @@ contract SPRL2_Constructor_Integrations_Test is Base_Test {
         assertEq(address(sprl2.BPT()), address(bpt));
         assertEq(address(sprl2.PRL()), address(prl));
         assertEq(address(sprl2.WETH()), address(weth));
+        assertEq(address(sprl2.PERMIT2()), address(permit2));
     }
 }

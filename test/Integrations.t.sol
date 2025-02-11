@@ -8,6 +8,8 @@ abstract contract Integrations_Test is Base_Test {
     function setUp() public virtual override {
         Base_Test.setUp();
 
+        permit2 = _deployPermit2Mock();
+
         mainFeeDistributor =
             _deployMainFeeDistributor(address(accessManager), address(bridgeableTokenMock), address(par));
 
@@ -36,7 +38,8 @@ abstract contract Integrations_Test is Base_Test {
             address(bpt),
             address(auraBpt),
             address(rewardToken),
-            address(extraRewardToken)
+            address(extraRewardToken),
+            address(permit2)
         );
 
         sprl2 = _deploySPRL2(
@@ -50,7 +53,8 @@ abstract contract Integrations_Test is Base_Test {
             auraRewardPoolMock,
             bpt,
             prl,
-            weth
+            weth,
+            permit2
         );
 
         rewardMerkleDistributor =

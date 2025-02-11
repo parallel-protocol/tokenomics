@@ -6,6 +6,7 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 import { Address } from "@openzeppelin/contracts/utils/Address.sol";
 
 import { IBalancerV3Router } from "contracts/interfaces/IBalancerV3Router.sol";
+import { IPermit2 } from "contracts/interfaces/IPermit2.sol";
 import {
     IAuraBoosterLite,
     IVirtualBalanceRewardPool,
@@ -28,12 +29,14 @@ contract sPRL2 is TimeLockPenaltyERC20 {
     string constant SYMBOL = "sPRL2";
 
     /// @dev Aura Pool PID is hardcoded and must be updated before deploying
-    uint256 public constant AURA_POOL_PID = 19;
+    uint256 public constant AURA_POOL_PID = 244;
 
     //-------------------------------------------
     // Storage
     //-------------------------------------------
 
+    /// @notice The Permit2 contract.
+    IPermit2 public immutable PERMIT2;
     /// @notice The Balancer V3 router.
     IBalancerV3Router public immutable BALANCER_ROUTER;
     /// @notice The Aura Booster Lite contract.
@@ -104,7 +107,8 @@ contract sPRL2 is TimeLockPenaltyERC20 {
         IAuraRewardPool _auraVault,
         IERC20 _balancerBPT,
         IERC20 _prl,
-        IWrappedNative _weth
+        IWrappedNative _weth,
+        IPermit2 _permit2
     )
         TimeLockPenaltyERC20(
             NAME,
@@ -122,7 +126,11 @@ contract sPRL2 is TimeLockPenaltyERC20 {
         PRL = _prl;
         WETH = _weth;
         BPT = _balancerBPT;
+        PERMIT2 = _permit2;
         isReversedBalancerPair = address(_weth) > address(_prl);
+        /// @dev Approve PERMIT2 to spend PRL and WETH
+        PRL.approve(address(PERMIT2), type(uint256).max);
+        WETH.approve(address(PERMIT2), type(uint256).max);
     }
 
     //-------------------------------------------
@@ -229,7 +237,7 @@ contract sPRL2 is TimeLockPenaltyERC20 {
     {
         (uint256 totalBptAmount, uint256 totalBptAmountSlashed) = _withdrawMultiple(_requestIds);
 
-        (prlAmount, wethAmount) = _exitPool(totalBptAmount, totalBptAmountSlashed, _minPrlAmount, _minWethAmount);
+        (wethAmount, prlAmount) = _exitPool(totalBptAmount, totalBptAmountSlashed, _minPrlAmount, _minWethAmount);
 
         emit WithdrawlPRLAndWeth(_requestIds, msg.sender, prlAmount, wethAmount, totalBptAmountSlashed);
         PRL.safeTransfer(msg.sender, prlAmount);
@@ -299,8 +307,9 @@ contract sPRL2 is TimeLockPenaltyERC20 {
             isReversedBalancerPair ? (_maxPrlAmount, _maxEthAmount) : (_maxEthAmount, _maxPrlAmount);
 
         /// @dev Approve tokens.
-        PRL.approve(address(BALANCER_ROUTER), _maxPrlAmount);
-        WETH.approve(address(BALANCER_ROUTER), _maxEthAmount);
+
+        PERMIT2.approve(address(PRL), address(BALANCER_ROUTER), uint160(_maxPrlAmount), 0);
+        PERMIT2.approve(address(WETH), address(BALANCER_ROUTER), uint160(_maxEthAmount), 0);
 
         /// @dev Wrap ETH.
         if (_isEth) {
@@ -310,27 +319,25 @@ contract sPRL2 is TimeLockPenaltyERC20 {
         uint256[] memory _amountsIn =
             BALANCER_ROUTER.addLiquidityProportional(address(BPT), maxAmountsIn, _exactBptAmount, false, "");
 
-        /// @dev Reset approvals in case not all tokens were used
-        PRL.approve(address(BALANCER_ROUTER), 0);
-        WETH.approve(address(BALANCER_ROUTER), 0);
-
         /// @dev Deposit into Aura
         _depositIntoAuraAndStake(_exactBptAmount);
 
         /// @dev Return any remaining PRL.
-        uint256 prlBalanceToReturn = PRL.balanceOf(address(this));
-        if (prlBalanceToReturn > 0) {
-            PRL.transfer(msg.sender, prlBalanceToReturn);
+        (uint256 prlAmountToReturn, uint256 ethAmountToReturn) = isReversedBalancerPair
+            ? (_maxPrlAmount - _amountsIn[0], _maxEthAmount - _amountsIn[1])
+            : (_maxPrlAmount - _amountsIn[1], _maxEthAmount - _amountsIn[0]);
+
+        if (prlAmountToReturn > 0) {
+            PRL.transfer(msg.sender, prlAmountToReturn);
         }
 
         /// @dev Return any remaining WETH.
-        uint256 wethBalanceToReturn = WETH.balanceOf(address(this));
-        if (wethBalanceToReturn > 0) {
+        if (ethAmountToReturn > 0) {
             if (_isEth) {
-                WETH.withdraw(wethBalanceToReturn);
-                payable(msg.sender).sendValue(wethBalanceToReturn);
+                WETH.withdraw(ethAmountToReturn);
+                payable(msg.sender).sendValue(ethAmountToReturn);
             } else {
-                WETH.transfer(msg.sender, wethBalanceToReturn);
+                WETH.transfer(msg.sender, ethAmountToReturn);
             }
         }
 

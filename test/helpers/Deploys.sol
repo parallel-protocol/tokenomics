@@ -19,6 +19,7 @@ import { sPRL2 } from "contracts/sPRL/sPRL2.sol";
 
 import { RewardMerkleDistributor } from "contracts/rewardMerkleDistributor/RewardMerkleDistributor.sol";
 
+import { IPermit2 } from "contracts/interfaces/IPermit2.sol";
 import { IBalancerV3Router } from "contracts/interfaces/IBalancerV3Router.sol";
 import { IWrappedNative } from "contracts/interfaces/IWrappedNative.sol";
 import {
@@ -28,10 +29,11 @@ import {
     IAuraStashToken
 } from "contracts/interfaces/IAura.sol";
 
+import { Permit2Mock } from "test/mocks/Permit2Mock.sol";
 import { TimeLockPenaltyERC20Mock } from "test/mocks/TimeLockPenaltyERC20Mock.sol";
 import { ERC20Mock } from "test/mocks/ERC20Mock.sol";
 import { WrappedNativeMock } from "test/mocks/WrapperNativeMock.sol";
-import { ReenteringMockToken } from "test/mocks/ReenteringMockToken.sol";
+
 import { BridgeableTokenMock } from "test/mocks/BridgeableTokenMock.sol";
 import {
     AuraBoosterLiteMock,
@@ -55,10 +57,12 @@ abstract contract Deploys is Test {
     ERC20Mock internal extraRewardToken;
     ERC20Mock internal rewardToken;
 
+    Permit2Mock internal permit2;
+
     WrappedNativeMock internal weth;
 
     BridgeableTokenMock internal bridgeableTokenMock;
-    ReenteringMockToken internal reenterToken;
+
     BalancerV3RouterMock internal balancerV3RouterMock;
 
     AuraBoosterLiteMock internal auraBoosterLiteMock;
@@ -100,6 +104,12 @@ abstract contract Deploys is Test {
         ERC20Mock _erc20 = new ERC20Mock(_name, _symbol, _decimals);
         vm.label({ account: address(_erc20), newLabel: _name });
         return _erc20;
+    }
+
+    function _deployPermit2Mock() internal returns (Permit2Mock) {
+        Permit2Mock _permit2Mock = new Permit2Mock();
+        vm.label({ account: address(_permit2Mock), newLabel: "Permit2Mock" });
+        return _permit2Mock;
     }
 
     function _deployWrappedNativeMock() internal returns (WrappedNativeMock) {
@@ -157,7 +167,8 @@ abstract contract Deploys is Test {
         IAuraRewardPool _auraVault,
         IERC20 _balancerBPT,
         IERC20 _prl,
-        IWrappedNative _weth
+        IWrappedNative _weth,
+        Permit2Mock _permit2
     )
         internal
         returns (sPRL2)
@@ -173,7 +184,8 @@ abstract contract Deploys is Test {
             _auraVault,
             _balancerBPT,
             _prl,
-            _weth
+            _weth,
+            _permit2
         );
         vm.label({ account: address(_sPRL2), newLabel: "sPRL2" });
         return _sPRL2;
@@ -241,11 +253,12 @@ abstract contract Deploys is Test {
         address _bpt,
         address _auraBpt,
         address _rewardToken,
-        address _extraReward
+        address _extraReward,
+        address _permit2
     )
         internal
     {
-        balancerV3RouterMock = new BalancerV3RouterMock(_tokens, _bpt);
+        balancerV3RouterMock = new BalancerV3RouterMock(_tokens, _bpt, _permit2);
         vm.label({ account: address(balancerV3RouterMock), newLabel: "BalancerV3RouterMock" });
 
         auraStashTokenMock = new AuraStashTokenMock(_extraReward);

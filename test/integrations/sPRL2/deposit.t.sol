@@ -44,7 +44,7 @@ contract SPRL2_Deposits_Integrations_Test is Integrations_Test {
         assertEq(sprl2.balanceOf(users.alice.addr), exactBptAmount);
     }
 
-    function test_sPRL2_DepositPRLAndWeth_WithEth(uint256 maxPrlAmount, uint256 maxEthAmount) external {
+    function test_sPRL2_DepositPRLAndEth(uint256 maxPrlAmount, uint256 maxEthAmount) external {
         maxPrlAmount = bound(maxPrlAmount, 1, prl.balanceOf(users.alice.addr));
         maxEthAmount = bound(maxEthAmount, 1, (users.alice.addr).balance);
 
@@ -84,16 +84,15 @@ contract SPRL2_Deposits_Integrations_Test is Integrations_Test {
         uint256 alicePrlBalanceBefore = prl.balanceOf(users.alice.addr);
         uint256 aliceEthBalanceBefore = (users.alice.addr).balance;
 
-        /// @dev add extra tokens to the contract
-        prl.mint(address(sprl2), maxPrlAmount);
-        weth.mint(address(sprl2), maxEthAmount);
+        // @dev should use half of the WETH and half of the PRL
+        balancerV3RouterMock.updateRatio(0.5e18);
 
         (uint256 deadline, uint8 v, bytes32 r, bytes32 s) =
             _signPermitData(users.alice.privateKey, address(sprl2), maxPrlAmount, address(prl));
 
         sprl2.depositPRLAndEth{ value: maxEthAmount }(maxPrlAmount, exactBptAmount, deadline, v, r, s);
-        assertEq(prl.balanceOf(users.alice.addr), alicePrlBalanceBefore);
-        assertEq((users.alice.addr).balance, aliceEthBalanceBefore);
+        assertEq(prl.balanceOf(users.alice.addr), alicePrlBalanceBefore - maxPrlAmount / 2);
+        assertEq((users.alice.addr).balance, aliceEthBalanceBefore - maxEthAmount / 2);
         assertEq(sprl2.balanceOf(users.alice.addr), exactBptAmount);
         assertEq(prl.balanceOf(address(sprl2)), 0);
         assertEq(weth.balanceOf(address(sprl2)), 0);
@@ -106,16 +105,15 @@ contract SPRL2_Deposits_Integrations_Test is Integrations_Test {
         uint256 alicePrlBalanceBefore = prl.balanceOf(users.alice.addr);
         uint256 aliceWethBalanceBefore = weth.balanceOf(users.alice.addr);
 
-        /// @dev add extra tokens to the contract
-        prl.mint(address(sprl2), maxPrlAmount);
-        weth.mint(address(sprl2), maxWethAmount);
+        // @dev should use half of the WETH and half of the PRL
+        balancerV3RouterMock.updateRatio(0.5e18);
 
         (uint256 deadline, uint8 v, bytes32 r, bytes32 s) =
             _signPermitData(users.alice.privateKey, address(sprl2), maxPrlAmount, address(prl));
 
         sprl2.depositPRLAndWeth(maxPrlAmount, maxWethAmount, exactBptAmount, deadline, v, r, s);
-        assertEq(prl.balanceOf(users.alice.addr), alicePrlBalanceBefore);
-        assertEq(weth.balanceOf(users.alice.addr), aliceWethBalanceBefore);
+        assertEq(prl.balanceOf(users.alice.addr), alicePrlBalanceBefore - maxPrlAmount / 2);
+        assertEq(weth.balanceOf(users.alice.addr), aliceWethBalanceBefore - maxWethAmount / 2);
         assertEq(sprl2.balanceOf(users.alice.addr), exactBptAmount);
         assertEq(prl.balanceOf(address(sprl2)), 0);
         assertEq(weth.balanceOf(address(sprl2)), 0);
