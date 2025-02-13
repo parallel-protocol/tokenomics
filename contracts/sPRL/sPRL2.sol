@@ -378,8 +378,8 @@ contract sPRL2 is TimeLockPenaltyERC20 {
     /// @param _bptAmount The amount of BPT to withdraw.
     /// @param _minPrlAmount The minimum amount of PRL to receive.
     /// @param _minWethAmount The minimum amount of WETH to receive.
-    /// @return _wethAmount The amount of WETH received.
     /// @return _prlAmount The amount of PRL received.
+    /// @return _wethAmount The amount of WETH received.
     function _exitPool(
         uint256 _bptAmount,
         uint256 _bptAmountSlashed,
@@ -387,7 +387,7 @@ contract sPRL2 is TimeLockPenaltyERC20 {
         uint256 _minWethAmount
     )
         internal
-        returns (uint256 _wethAmount, uint256 _prlAmount)
+        returns (uint256 _prlAmount, uint256 _wethAmount)
     {
         /// @dev Exit the Aura Vault and unstake the BPT.
         _exitAuraVaultAndUnstake(_bptAmount, _bptAmountSlashed);
