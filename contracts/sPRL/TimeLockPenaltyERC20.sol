@@ -10,6 +10,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { AccessManaged } from "@openzeppelin/contracts/access/manager/AccessManaged.sol";
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { Nonces } from "@openzeppelin/contracts/utils/Nonces.sol";
+import { Time } from "@openzeppelin/contracts/utils/types/Time.sol";
 
 import { MathsLib } from "contracts/libraries/MathsLib.sol";
 
@@ -383,5 +384,20 @@ abstract contract TimeLockPenaltyERC20 is ERC20, ERC20Permit, ERC20Votes, Access
     /// @return The nonce for the address.
     function nonces(address owner) public view virtual override(ERC20Permit, Nonces) returns (uint256) {
         return super.nonces(owner);
+    }
+
+    /// @notice Override clock() function to return block.timestamp
+    function clock() public view virtual override returns (uint48) {
+        return Time.timestamp(); // Return current timestamp
+    }
+
+    /// @notice Override CLOCK_MODE() function to return "mode=timestamp&from=default"
+    /// @dev This function is used to check that the clock was not modified
+    function CLOCK_MODE() public view virtual override returns (string memory) {
+        // Check that the clock was not modified
+        if (clock() != Time.timestamp()) {
+            revert ERC6372InconsistentClock();
+        }
+        return "mode=timestamp&from=default";
     }
 }
