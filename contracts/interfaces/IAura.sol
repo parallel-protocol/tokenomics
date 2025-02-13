@@ -10,19 +10,5 @@ interface IAuraBoosterLite {
 interface IAuraRewardPool {
     function getReward() external returns (bool);
 
-    function extraRewardsLength() external view returns (uint256);
-
-    function extraRewards() external view returns (address[] memory);
-
-    function rewardToken() external view returns (address);
-
     function withdrawAndUnwrap(uint256 amount, bool claim) external returns (bool);
-}
-
-interface IVirtualBalanceRewardPool {
-    function rewardToken() external view returns (address);
-}
-
-interface IAuraStashToken {
-    function baseToken() external view returns (address);
 }

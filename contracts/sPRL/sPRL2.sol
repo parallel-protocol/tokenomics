@@ -6,12 +6,7 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 import { Address } from "@openzeppelin/contracts/utils/Address.sol";
 
 import { IBalancerV3Router } from "contracts/interfaces/IBalancerV3Router.sol";
-import {
-    IAuraBoosterLite,
-    IVirtualBalanceRewardPool,
-    IAuraRewardPool,
-    IAuraStashToken
-} from "contracts/interfaces/IAura.sol";
+import { IAuraBoosterLite, IAuraRewardPool } from "contracts/interfaces/IAura.sol";
 import { IWrappedNative } from "contracts/interfaces/IWrappedNative.sol";
 
 /// @title sPRL2
@@ -34,12 +29,23 @@ contract sPRL2 is TimeLockPenaltyERC20 {
     // Storage
     //-------------------------------------------
 
+    /// @notice The configuration parameters for the contract.
+    struct BPTConfigParams {
+        IBalancerV3Router balancerRouter;
+        IAuraBoosterLite auraBoosterLite;
+        IAuraRewardPool auraRewardsPool;
+        IERC20 balancerBPT;
+        IERC20 prl;
+        IWrappedNative weth;
+        address[] rewardTokens;
+    }
+
     /// @notice The Balancer V3 router.
     IBalancerV3Router public immutable BALANCER_ROUTER;
     /// @notice The Aura Booster Lite contract.
     IAuraBoosterLite public immutable AURA_BOOSTER_LITE;
-    /// @notice The Aura Vault contract.
-    IAuraRewardPool public immutable AURA_VAULT;
+    /// @notice The Aura Rewards Pool contract.
+    IAuraRewardPool public immutable AURA_REWARDS_POOL;
     /// @notice The PRL token.
     IERC20 public immutable PRL;
     /// @notice The WETH token.
@@ -48,6 +54,9 @@ contract sPRL2 is TimeLockPenaltyERC20 {
     IERC20 public immutable BPT;
     /// @notice Whether the pair is reversed.
     bool public immutable isReversedBalancerPair;
+    /// @notice The tokens that can be claimed as rewards from the Aura Pool.
+    /// @dev This is used to avoid complex logic to know which tokens to forward from the Aura Pool.
+    address[] public rewardTokens;
 
     //-------------------------------------------
     // Events
@@ -70,12 +79,19 @@ contract sPRL2 is TimeLockPenaltyERC20 {
     /// @param slashBptAmount The amount of BPT sent to the fee receiver.
     event WithdrawlBPT(uint256[] requestIds, address user, uint256 bptAmount, uint256 slashBptAmount);
 
+    /// @notice Event emitted when the reward tokens are updated.
+    /// @param rewardTokens The new reward tokens.
+    event RewardTokensUpdated(address[] rewardTokens);
+
     //-------------------------------------------
     // Errors
     //-------------------------------------------
 
     /// @notice Error thrown when the deposit fails.
     error AuraDepositFailed();
+
+    /// @notice Error thrown when the reward tokens array is empty.
+    error EmptyRewardTokens();
 
     //-------------------------------------------
     // Constructor
@@ -87,24 +103,14 @@ contract sPRL2 is TimeLockPenaltyERC20 {
     /// @param _accessManager The address of the access manager.
     /// @param _startPenaltyPercentage The start penalty percentage.
     /// @param _timeLockDuration The time lock duration.
-    /// @param _balancerRouter The address of the Balancer V3 router.
-    /// @param _auraBoosterLite The address of the Aura Booster Lite contract.
-    /// @param _auraVault The address of the Aura Vault contract.
-    /// @param _balancerBPT The address of the Balancer BPT token.
-    /// @param _prl The address of the PRL token.
-    /// @param _weth The address of the WETH token.
+    /// @param _configParams The configuration parameters for the contract.
     constructor(
         address _stakedAuraBPT,
         address _feeReceiver,
         address _accessManager,
         uint256 _startPenaltyPercentage,
         uint64 _timeLockDuration,
-        IBalancerV3Router _balancerRouter,
-        IAuraBoosterLite _auraBoosterLite,
-        IAuraRewardPool _auraVault,
-        IERC20 _balancerBPT,
-        IERC20 _prl,
-        IWrappedNative _weth
+        BPTConfigParams memory _configParams
     )
         TimeLockPenaltyERC20(
             NAME,
@@ -116,13 +122,17 @@ contract sPRL2 is TimeLockPenaltyERC20 {
             _timeLockDuration
         )
     {
-        BALANCER_ROUTER = _balancerRouter;
-        AURA_BOOSTER_LITE = _auraBoosterLite;
-        AURA_VAULT = _auraVault;
-        PRL = _prl;
-        WETH = _weth;
-        BPT = _balancerBPT;
-        isReversedBalancerPair = address(_weth) > address(_prl);
+        if (_configParams.rewardTokens.length == 0) {
+            revert EmptyRewardTokens();
+        }
+        BALANCER_ROUTER = _configParams.balancerRouter;
+        AURA_BOOSTER_LITE = _configParams.auraBoosterLite;
+        AURA_REWARDS_POOL = _configParams.auraRewardsPool;
+        PRL = _configParams.prl;
+        WETH = _configParams.weth;
+        BPT = _configParams.balancerBPT;
+        isReversedBalancerPair = address(_configParams.weth) > address(_configParams.prl);
+        rewardTokens = _configParams.rewardTokens;
     }
 
     //-------------------------------------------
@@ -236,27 +246,19 @@ contract sPRL2 is TimeLockPenaltyERC20 {
         WETH.transfer(msg.sender, wethAmount);
     }
 
-    /// @notice Claim rewards from Aura Pool and transfer them to the fee receiver.
+    /// @notice Claim rewards from Aura Pool
     function claimRewards() public {
-        AURA_VAULT.getReward();
-        IERC20 mainRewardToken = IERC20(AURA_VAULT.rewardToken());
-        uint256 mainRewardBalance = mainRewardToken.balanceOf(address(this));
-        if (mainRewardBalance > 0) {
-            mainRewardToken.safeTransfer(feeReceiver, mainRewardBalance);
-        }
+        AURA_REWARDS_POOL.getReward();
+        forwardRewards();
+    }
 
-        address[] memory extraRewards = AURA_VAULT.extraRewards();
-        uint256 extraRewardsLength = extraRewards.length;
-        if (extraRewardsLength > 0) {
-            uint256 i;
-            for (; i < extraRewardsLength; ++i) {
-                IAuraStashToken auraStashToken =
-                    IAuraStashToken(IVirtualBalanceRewardPool(extraRewards[i]).rewardToken());
-                IERC20 extraRewardToken = IERC20(auraStashToken.baseToken());
-                uint256 rewardBalance = extraRewardToken.balanceOf(address(this));
-                if (rewardBalance > 0) {
-                    extraRewardToken.safeTransfer(feeReceiver, rewardBalance);
-                }
+    /// @notice Forward rewards owned by the contract to the fee receiver.
+    function forwardRewards() public {
+        for (uint256 i; i < rewardTokens.length; i++) {
+            IERC20 token = IERC20(rewardTokens[i]);
+            uint256 balance = token.balanceOf(address(this));
+            if (balance > 0) {
+                token.safeTransfer(feeReceiver, balance);
             }
         }
     }
@@ -271,12 +273,30 @@ contract sPRL2 is TimeLockPenaltyERC20 {
         BPT.safeTransfer(msg.sender, _amount);
     }
 
+    //-------------------------------------------
+    // Restricted Functions
+    //-------------------------------------------
+
     /// @notice Allow the AccessManager to update the fee receiver.
     /// @dev Override the parent contract function to claim rewards before updating the fee receiver.
     /// @param _newFeeReceiver The new fee receiver.
     function updateFeeReceiver(address _newFeeReceiver) public override restricted {
         claimRewards();
         super.updateFeeReceiver(_newFeeReceiver);
+    }
+
+    /// @notice Allow the AccessManager to update the reward tokens.
+    /// @dev This function can only be called by the AccessManager.
+    /// @param _rewardTokens The new reward tokens.
+    function updateRewardTokens(address[] calldata _rewardTokens) public restricted {
+        if (_rewardTokens.length == 0) {
+            revert EmptyRewardTokens();
+        }
+        delete rewardTokens;
+        for (uint256 i; i < _rewardTokens.length; i++) {
+            rewardTokens.push(_rewardTokens[i]);
+        }
+        emit RewardTokensUpdated(_rewardTokens);
     }
 
     /// @notice Allow ETH to be received.
@@ -388,7 +408,7 @@ contract sPRL2 is TimeLockPenaltyERC20 {
     /// @param _amount The amount of Aura BPT to unstake.
     /// @param _amountSlashed The amount of Aura BPT to slash.
     function _exitAuraVaultAndUnstake(uint256 _amount, uint256 _amountSlashed) internal {
-        AURA_VAULT.withdrawAndUnwrap(_amount + _amountSlashed, false);
+        AURA_REWARDS_POOL.withdrawAndUnwrap(_amount + _amountSlashed, false);
         // Transfer the slash amount of BPT to the fee receiver
         if (_amountSlashed > 0) {
             BPT.safeTransfer(feeReceiver, _amountSlashed);

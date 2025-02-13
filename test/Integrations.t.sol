@@ -31,13 +31,7 @@ abstract contract Integrations_Test is Base_Test {
             DEFAULT_TIME_LOCK_DURATION
         );
 
-        _deployBalancerAndAuraMock(
-            [address(weth), address(prl)],
-            address(bpt),
-            address(auraBpt),
-            address(rewardToken),
-            address(extraRewardToken)
-        );
+        _deployBalancerAndAuraMock([address(weth), address(prl)], address(bpt), address(auraBpt));
 
         sprl2 = _deploySPRL2(
             address(auraBpt),
@@ -50,7 +44,8 @@ abstract contract Integrations_Test is Base_Test {
             auraRewardPoolMock,
             bpt,
             prl,
-            weth
+            weth,
+            rewardTokens
         );
 
         rewardMerkleDistributor =
