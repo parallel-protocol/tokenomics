@@ -11,14 +11,16 @@ contract RewardMerkleDistributor_Claim_Integrations_Test is Integrations_Test {
     uint256 internal secondClaimRewardsAmount = 2e18;
     uint256 internal epochRewards = INITIAL_BALANCE;
     uint256 internal totalRewards = epochRewards * 2;
+    uint64 epochLength;
 
-    uint64 firstEpochId = 0;
+    uint64 firstEpochId = 1;
+    uint64 firstEpochStartDelay = 1 days;
     RewardMerkleDistributor.MerkleDrop firstEpochMerkleDrop;
     Merkle internal firstEpochMerkleTree;
     bytes32[] internal firstEpochLeaves;
     bytes32 internal firstEpochRoot;
 
-    uint64 secondEpochId = 1;
+    uint64 secondEpochId = 2;
     RewardMerkleDistributor.MerkleDrop secondEpochMerkleDrop;
     Merkle internal secondEpochMerkleTree;
     bytes32[] internal secondEpochLeaves;
@@ -26,7 +28,7 @@ contract RewardMerkleDistributor_Claim_Integrations_Test is Integrations_Test {
 
     function setUp() public override {
         super.setUp();
-
+        epochLength = rewardMerkleDistributor.EPOCH_LENGTH();
         firstEpochMerkleTree = new Merkle();
         secondEpochMerkleTree = new Merkle();
 
@@ -46,8 +48,8 @@ contract RewardMerkleDistributor_Claim_Integrations_Test is Integrations_Test {
         firstEpochMerkleDrop = RewardMerkleDistributor.MerkleDrop({
             root: firstEpochRoot,
             totalAmount: epochRewards,
-            startTime: uint64(block.timestamp),
-            expiryTime: uint64(block.timestamp) + uint64(rewardMerkleDistributor.EPOCH_LENGTH() * 6)
+            startTime: uint64(block.timestamp) + firstEpochStartDelay,
+            expiryTime: uint64(block.timestamp) + firstEpochStartDelay + epochLength * 6
         });
         rewardMerkleDistributor.updateMerkleDrop(firstEpochId, firstEpochMerkleDrop);
 
@@ -63,13 +65,28 @@ contract RewardMerkleDistributor_Claim_Integrations_Test is Integrations_Test {
         secondEpochMerkleDrop = RewardMerkleDistributor.MerkleDrop({
             root: secondEpochRoot,
             totalAmount: epochRewards,
-            startTime: uint64(block.timestamp) + uint64(rewardMerkleDistributor.EPOCH_LENGTH()),
-            expiryTime: uint64(block.timestamp) + uint64(rewardMerkleDistributor.EPOCH_LENGTH() * 7)
+            startTime: uint64(block.timestamp) + firstEpochStartDelay + epochLength,
+            expiryTime: uint64(block.timestamp) + firstEpochStartDelay + epochLength * 7
         });
         rewardMerkleDistributor.updateMerkleDrop(secondEpochId, secondEpochMerkleDrop);
     }
 
-    function test_RewardMerkleDistributor_Claim_OneEpoch() external {
+    modifier skipToFirstEpochStartTime() {
+        skip(firstEpochStartDelay);
+        _;
+    }
+
+    modifier skipToFirstEpochExpiryTime() {
+        skip(firstEpochStartDelay + epochLength * 6);
+        _;
+    }
+
+    modifier skipToSecondEpochStartTime() {
+        skip(firstEpochStartDelay + epochLength);
+        _;
+    }
+
+    function test_RewardMerkleDistributor_Claim_OneEpoch() external skipToFirstEpochStartTime {
         vm.startPrank(users.alice.addr);
 
         uint256 alicePARBalanceBefore = par.balanceOf(users.alice.addr);
@@ -91,7 +108,7 @@ contract RewardMerkleDistributor_Claim_Integrations_Test is Integrations_Test {
         assertEq(rewardMerkleDistributor.totalClaimed(), firstClaimRewardsAmount);
     }
 
-    function test_RewardMerkleDistributor_Claim_SeveralEpochs() external {
+    function test_RewardMerkleDistributor_Claim_SeveralEpochs() external skipToSecondEpochStartTime {
         vm.startPrank(users.alice.addr);
         uint256 expectedTotalClaimed = firstClaimRewardsAmount + secondClaimRewardsAmount;
 
@@ -124,7 +141,7 @@ contract RewardMerkleDistributor_Claim_Integrations_Test is Integrations_Test {
         assertEq(rewardMerkleDistributor.totalClaimed(), expectedTotalClaimed);
     }
 
-    function test_RewardMerkleDistributor_Claim_RevertWhen_EpochExpired() external {
+    function test_RewardMerkleDistributor_Claim_RevertWhen_EpochExpired() external skipToFirstEpochExpiryTime {
         vm.startPrank(users.alice.addr);
         bytes32[] memory proof = firstEpochMerkleTree.getProof(firstEpochLeaves, 0);
 
@@ -155,7 +172,7 @@ contract RewardMerkleDistributor_Claim_Integrations_Test is Integrations_Test {
         rewardMerkleDistributor.claims(claimsData);
     }
 
-    function test_RewardMerkleDistributor_Claim_RevertWhen_EpochAlreadyClaimed() external {
+    function test_RewardMerkleDistributor_Claim_RevertWhen_EpochAlreadyClaimed() external skipToFirstEpochStartTime {
         vm.startPrank(users.alice.addr);
 
         bytes32[] memory proof = firstEpochMerkleTree.getProof(firstEpochLeaves, 0);
@@ -174,7 +191,7 @@ contract RewardMerkleDistributor_Claim_Integrations_Test is Integrations_Test {
         rewardMerkleDistributor.claims(claimsData);
     }
 
-    function test_RewardMerkleDistributor_Claim_RevertWhen_ProofInvalid() external {
+    function test_RewardMerkleDistributor_Claim_RevertWhen_ProofInvalid() external skipToFirstEpochStartTime {
         vm.startPrank(users.alice.addr);
 
         bytes32[] memory proof = firstEpochMerkleTree.getProof(firstEpochLeaves, 0);
@@ -196,10 +213,11 @@ contract RewardMerkleDistributor_Claim_Integrations_Test is Integrations_Test {
         firstEpochMerkleDrop = RewardMerkleDistributor.MerkleDrop({
             root: firstEpochRoot,
             totalAmount: firstClaimRewardsAmount - 1,
-            startTime: uint64(block.timestamp),
-            expiryTime: uint64(block.timestamp) + uint64(rewardMerkleDistributor.EPOCH_LENGTH() * 6)
+            startTime: uint64(block.timestamp) + firstEpochStartDelay,
+            expiryTime: uint64(block.timestamp) + firstEpochStartDelay + epochLength * 6
         });
         rewardMerkleDistributor.updateMerkleDrop(firstEpochId, firstEpochMerkleDrop);
+        skip(firstEpochStartDelay);
 
         _;
     }

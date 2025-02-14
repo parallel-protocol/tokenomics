@@ -12,13 +12,13 @@ contract RewardMerkleDistributor_ForwardExpiredRewards_Integrations_Test is Inte
     uint256 internal secondRewardsAmount = 2e18;
     uint256 internal totalSecondRewardsAmount = secondRewardsAmount * 2;
 
-    uint64 firstEpochId = 0;
+    uint64 firstEpochId = 1;
     RewardMerkleDistributor.MerkleDrop firstEpochMerkleDrop;
     Merkle internal firstEpochMerkleTree;
     bytes32[] internal firstEpochLeaves;
     bytes32 internal firstEpochRoot;
 
-    uint64 secondEpochId = 1;
+    uint64 secondEpochId = 2;
     RewardMerkleDistributor.MerkleDrop secondEpochMerkleDrop;
     Merkle internal secondEpochMerkleTree;
     bytes32[] internal secondEpochLeaves;

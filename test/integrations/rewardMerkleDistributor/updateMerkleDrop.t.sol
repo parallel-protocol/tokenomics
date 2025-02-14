@@ -47,4 +47,25 @@ contract RewardMerkleDistributor_UpdateMerkleDrop_Integrations_Test is Integrati
         vm.expectRevert(abi.encodeWithSelector(RewardMerkleDistributor.EpochExpired.selector));
         rewardMerkleDistributor.updateMerkleDrop(epochId, merkleDrop);
     }
+
+    function test_RewardMerkleDistributor_UpdateMerkleDrop_RevertWhen_UpdateEpochAlreadyStarted() external {
+        vm.startPrank(users.admin.addr);
+        rewardMerkleDistributor.updateMerkleDrop(epochId, merkleDrop);
+
+        skip(merkleDrop.startTime);
+        vm.expectRevert(abi.encodeWithSelector(RewardMerkleDistributor.EpochCantBeUpdated.selector));
+        rewardMerkleDistributor.updateMerkleDrop(epochId, merkleDrop);
+    }
+
+    function test_RewardMerkleDistributor_UpdateMerkleDrop_RevertWhen_UpdateEpochTooFar() external {
+        vm.startPrank(users.admin.addr);
+        vm.expectRevert(abi.encodeWithSelector(RewardMerkleDistributor.EpochToFar.selector));
+        rewardMerkleDistributor.updateMerkleDrop(epochId + 2, merkleDrop);
+    }
+
+    function test_RewardMerkleDistributor_UpdateMerkleDrop_RevertWhen_UpdateEpochZero() external {
+        vm.startPrank(users.admin.addr);
+        vm.expectRevert(abi.encodeWithSelector(RewardMerkleDistributor.EpochZeroNotAllowed.selector));
+        rewardMerkleDistributor.updateMerkleDrop(0, merkleDrop);
+    }
 }
