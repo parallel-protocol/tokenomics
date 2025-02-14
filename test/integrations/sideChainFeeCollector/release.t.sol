@@ -10,7 +10,7 @@ contract SideChainFeeCollector_Release_Integrations_Test is Integrations_Test {
         vm.startPrank(users.admin.addr);
         par.mint(address(sideChainFeeCollector), INITIAL_BALANCE);
         bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(200_000, 0);
-        sideChainFeeCollector.release(options);
+        sideChainFeeCollector.release(options, address(bridgeableTokenMock), address(mainFeeDistributor));
 
         assertEq(par.balanceOf(address(sideChainFeeCollector)), 0);
     }
@@ -21,7 +21,7 @@ contract SideChainFeeCollector_Release_Integrations_Test is Integrations_Test {
         bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(200_000, 0);
 
         vm.expectRevert(abi.encodeWithSelector(IAccessManaged.AccessManagedUnauthorized.selector, users.hacker.addr));
-        sideChainFeeCollector.release(options);
+        sideChainFeeCollector.release(options, address(bridgeableTokenMock), address(mainFeeDistributor));
     }
 
     function test_SideChainFeeCollector_Release_RevertWhen_AmountIsZero() external {
@@ -29,6 +29,24 @@ contract SideChainFeeCollector_Release_Integrations_Test is Integrations_Test {
         bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(200_000, 0);
 
         vm.expectRevert(abi.encodeWithSelector(FeeCollectorCore.NothingToRelease.selector));
-        sideChainFeeCollector.release(options);
+        sideChainFeeCollector.release(options, address(bridgeableTokenMock), address(mainFeeDistributor));
+    }
+
+    function test_SideChainFeeCollector_Release_RevertWhen_BridgeableTokenMismatch() external {
+        vm.startPrank(users.admin.addr);
+        address wrongBridgeableToken = makeAddr("wrongBridgeableToken");
+        bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(200_000, 0);
+
+        vm.expectRevert(abi.encodeWithSelector(SideChainFeeCollector.BridgeableTokenMismatch.selector));
+        sideChainFeeCollector.release(options, wrongBridgeableToken, address(mainFeeDistributor));
+    }
+
+    function test_SideChainFeeCollector_Release_RevertWhen_DestinationReceiverMismatch() external {
+        vm.startPrank(users.admin.addr);
+        address wrongDestinationReceiver = makeAddr("wrongDestinationReceiver");
+        bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(200_000, 0);
+
+        vm.expectRevert(abi.encodeWithSelector(SideChainFeeCollector.DestinationReceiverMismatch.selector));
+        sideChainFeeCollector.release(options, address(bridgeableTokenMock), wrongDestinationReceiver);
     }
 }
