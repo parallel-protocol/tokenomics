@@ -125,10 +125,10 @@ abstract contract TimeLockPenaltyERC20 is ERC20, ERC20Permit, ERC20Votes, Access
     error CannotCancelWithdrawalRequest(uint256 reqId);
     /// @notice Thrown when a user tries to withdraw assets that are not in the unlocking state.
     error CannotWithdraw(uint256 reqId);
-    /// @notice Thrown when a user tries to withdraw assets that are not yet unlocked.
-    error CannotWithdrawYet(uint256 reqId);
     /// @notice Thrown when the percentage is out of range.
     error PercentageOutOfRange(uint256 attemptedPercentage);
+    /// @notice Thrown when the penalty percentage is too high.
+    error MaxPenaltyPercentageExceeded();
 
     //-------------------------------------------
     // Constructor
@@ -295,12 +295,19 @@ abstract contract TimeLockPenaltyERC20 is ERC20, ERC20Permit, ERC20Votes, Access
 
     /// @notice Withdraw multiple withdrawal requests.
     /// @param _ids The IDs of the withdrawal requests to withdraw.
+    /// @param _maxAcceptablePenalty The maximum penalty percentage to apply.
     /// @return totalAmountWithdrawn The total amount of assets withdrawn.
     /// @return totalSlashAmount The total amount of assets that were slashed.
-    function _withdrawMultiple(uint256[] calldata _ids)
+    function _withdrawMultiple(
+        uint256[] calldata _ids,
+        uint256 _maxAcceptablePenalty
+    )
         internal
         returns (uint256 totalAmountWithdrawn, uint256 totalSlashAmount)
     {
+        if (startPenaltyPercentage > _maxAcceptablePenalty) {
+            revert MaxPenaltyPercentageExceeded();
+        }
         uint256 i = 0;
         for (; i < _ids.length; ++i) {
             (uint256 amountWithdrawn, uint256 slashAmount) = _withdraw(_ids[i]);

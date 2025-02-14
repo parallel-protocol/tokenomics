@@ -215,8 +215,9 @@ contract sPRL2 is TimeLockPenaltyERC20 {
 
     /// @notice Withdraw BPT for multiple requests.
     /// @param _requestIds The request IDs to withdraw from.
-    function withdrawBPT(uint256[] calldata _requestIds) external nonReentrant {
-        (uint256 totalBptAmount, uint256 totalBptAmountSlashed) = _withdrawMultiple(_requestIds);
+    /// @param _maxAcceptablePenalty The maximum penalty percentage to apply.
+    function withdrawBPT(uint256[] calldata _requestIds, uint256 _maxAcceptablePenalty) external nonReentrant {
+        (uint256 totalBptAmount, uint256 totalBptAmountSlashed) = _withdrawMultiple(_requestIds, _maxAcceptablePenalty);
         _exitAuraVaultAndUnstake(totalBptAmount, totalBptAmountSlashed);
         emit WithdrawlBPT(_requestIds, msg.sender, totalBptAmount, totalBptAmountSlashed);
         BPT.safeTransfer(msg.sender, totalBptAmount);
@@ -231,13 +232,14 @@ contract sPRL2 is TimeLockPenaltyERC20 {
     function withdrawPRLAndWeth(
         uint256[] calldata _requestIds,
         uint256 _minPrlAmount,
-        uint256 _minWethAmount
+        uint256 _minWethAmount,
+        uint256 _maxPenaltyPercentage
     )
         external
         nonReentrant
         returns (uint256 prlAmount, uint256 wethAmount)
     {
-        (uint256 totalBptAmount, uint256 totalBptAmountSlashed) = _withdrawMultiple(_requestIds);
+        (uint256 totalBptAmount, uint256 totalBptAmountSlashed) = _withdrawMultiple(_requestIds, _maxPenaltyPercentage);
 
         (prlAmount, wethAmount) = _exitPool(totalBptAmount, totalBptAmountSlashed, _minPrlAmount, _minWethAmount);
 
