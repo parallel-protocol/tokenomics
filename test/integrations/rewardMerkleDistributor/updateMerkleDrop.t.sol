@@ -57,10 +57,10 @@ contract RewardMerkleDistributor_UpdateMerkleDrop_Integrations_Test is Integrati
         rewardMerkleDistributor.updateMerkleDrop(epochId, merkleDrop);
     }
 
-    function test_RewardMerkleDistributor_UpdateMerkleDrop_RevertWhen_UpdateEpochTooFar() external {
+    function test_RewardMerkleDistributor_UpdateMerkleDrop_RevertWhen_UpdateEpochCreatesGap() external {
         vm.startPrank(users.admin.addr);
-        vm.expectRevert(abi.encodeWithSelector(RewardMerkleDistributor.EpochToFar.selector));
-        rewardMerkleDistributor.updateMerkleDrop(epochId + 2, merkleDrop);
+        vm.expectRevert(abi.encodeWithSelector(RewardMerkleDistributor.EpochGapNotAllowed.selector));
+        rewardMerkleDistributor.updateMerkleDrop(epochId + 1, merkleDrop);
     }
 
     function test_RewardMerkleDistributor_UpdateMerkleDrop_RevertWhen_UpdateEpochZero() external {
