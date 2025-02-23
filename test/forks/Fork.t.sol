@@ -30,22 +30,6 @@ abstract contract Fork_Test is Base_Test {
         );
     }
 
-    // function _network() internal virtual returns (string memory) {
-    //     Chain memory currentChain = getChain(block.chainid);
-    //     return currentChain.chainAlias;
-    // }
-
-    // function _initConfig() internal returns (Config storage) {
-    //     if (bytes(config.json).length == 0) {
-    //         string memory root = vm.projectRoot();
-    //         configFilePath = string.concat(root, "/config/", _network(), ".json");
-
-    //         config.json = vm.readFile(configFilePath);
-    //     }
-
-    //     return config;
-    // }
-
     function _setForkContracts() internal virtual {
         permit2 = Permit2Mock(0x000000000022D473030F116dDEE9F6B43aC78BA3);
         vm.label({ account: address(permit2), newLabel: "Permit2" });

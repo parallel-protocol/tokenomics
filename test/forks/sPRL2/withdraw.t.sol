@@ -22,8 +22,8 @@ contract SPRL2_Withdraw_Fork_Test is Fork_Test {
 
         (uint256[] memory amountsIn,) =
             sprl2.depositPRLAndWeth(INITIAL_BALANCE, INITIAL_BALANCE, exactBptAmount, deadline, v, r, s);
-        prlAmountDeposited = amountsIn[1];
-        wethAmountDeposited = amountsIn[0];
+        prlAmountDeposited = amountsIn[0];
+        wethAmountDeposited = amountsIn[1];
     }
 
     modifier requestWithdrawal() {
@@ -48,12 +48,11 @@ contract SPRL2_Withdraw_Fork_Test is Fork_Test {
 
         uint256[] memory requestIds = new uint256[](1);
         requestIds[0] = 0;
-
         // Calculate the minimum amounts to withdraw 1% slippage
         uint256 minPrlAmount = prlAmountDeposited * 99 / 100;
         uint256 minWethAmount = wethAmountDeposited * 99 / 100;
 
-        (uint256 prlAmount, uint256 wethAmount) = sprl2.withdrawPRLAndWeth(requestIds, minWethAmount, minPrlAmount);
+        (uint256 prlAmount, uint256 wethAmount) = sprl2.withdrawPRLAndWeth(requestIds, minPrlAmount, minWethAmount);
 
         assertEq(sprl2.balanceOf(users.alice.addr), 0);
         assertEq(prl.balanceOf(users.alice.addr), alicePrlBalance + prlAmount);

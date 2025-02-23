@@ -307,7 +307,6 @@ contract sPRL2 is TimeLockPenaltyERC20 {
             isReversedBalancerPair ? (_maxPrlAmount, _maxEthAmount) : (_maxEthAmount, _maxPrlAmount);
 
         /// @dev Approve tokens.
-
         PERMIT2.approve(address(PRL), address(BALANCER_ROUTER), uint160(_maxPrlAmount), 0);
         PERMIT2.approve(address(WETH), address(BALANCER_ROUTER), uint160(_maxEthAmount), 0);
 
