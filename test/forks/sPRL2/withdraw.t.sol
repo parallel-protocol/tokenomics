@@ -36,7 +36,7 @@ contract SPRL2_Withdraw_Fork_Test is Fork_Test {
         uint256 aliceBptBalance = sprl2.balanceOf(users.alice.addr);
         uint256[] memory requestIds = new uint256[](1);
         requestIds[0] = 0;
-        sprl2.withdrawBPT(requestIds);
+        sprl2.withdrawBPT(requestIds, DEFAULT_PENALTY_PERCENTAGE);
         assertEq(sprl2.balanceOf(users.alice.addr), 0);
         assertEq(bpt.balanceOf(users.alice.addr), aliceBptBalance + exactBptAmount);
     }
@@ -52,7 +52,8 @@ contract SPRL2_Withdraw_Fork_Test is Fork_Test {
         uint256 minPrlAmount = prlAmountDeposited * 99 / 100;
         uint256 minWethAmount = wethAmountDeposited * 99 / 100;
 
-        (uint256 prlAmount, uint256 wethAmount) = sprl2.withdrawPRLAndWeth(requestIds, minPrlAmount, minWethAmount);
+        (uint256 prlAmount, uint256 wethAmount) =
+            sprl2.withdrawPRLAndWeth(requestIds, minPrlAmount, minWethAmount, DEFAULT_PENALTY_PERCENTAGE);
 
         assertEq(sprl2.balanceOf(users.alice.addr), 0);
         assertEq(prl.balanceOf(users.alice.addr), alicePrlBalance + prlAmount);

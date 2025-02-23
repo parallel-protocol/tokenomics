@@ -36,6 +36,9 @@ abstract contract Base_Test is Test, Deploys, Assertions, Defaults, Utils {
         rewardToken = _deployERC20Mock("rewardToken", "rewardToken", 18);
         // Deploy extra reward token contract.
         extraRewardToken = _deployERC20Mock("extraRewardToken", "extraRewardToken", 18);
+        // Add reward tokens to the array.
+        rewardTokens.push(address(rewardToken));
+        rewardTokens.push(address(extraRewardToken));
 
         // Deploy bridgeable token mock contract.
         bridgeableTokenMock = _deployBridgeableTokenMock(address(par));

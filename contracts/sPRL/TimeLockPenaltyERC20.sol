@@ -10,6 +10,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { AccessManaged } from "@openzeppelin/contracts/access/manager/AccessManaged.sol";
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { Nonces } from "@openzeppelin/contracts/utils/Nonces.sol";
+import { Time } from "@openzeppelin/contracts/utils/types/Time.sol";
 
 import { MathsLib } from "contracts/libraries/MathsLib.sol";
 
@@ -124,10 +125,10 @@ abstract contract TimeLockPenaltyERC20 is ERC20, ERC20Permit, ERC20Votes, Access
     error CannotCancelWithdrawalRequest(uint256 reqId);
     /// @notice Thrown when a user tries to withdraw assets that are not in the unlocking state.
     error CannotWithdraw(uint256 reqId);
-    /// @notice Thrown when a user tries to withdraw assets that are not yet unlocked.
-    error CannotWithdrawYet(uint256 reqId);
     /// @notice Thrown when the percentage is out of range.
     error PercentageOutOfRange(uint256 attemptedPercentage);
+    /// @notice Thrown when the penalty percentage is too high.
+    error MaxPenaltyPercentageExceeded();
 
     //-------------------------------------------
     // Constructor
@@ -264,7 +265,7 @@ abstract contract TimeLockPenaltyERC20 is ERC20, ERC20Permit, ERC20Votes, Access
 
     /// @notice Allow the AccessManager to update the fee receiver address.
     /// @param _newFeeReceiver The new fee receiver.
-    function updateFeeReceiver(address _newFeeReceiver) external restricted {
+    function updateFeeReceiver(address _newFeeReceiver) public virtual restricted {
         emit FeeReceiverUpdated(_newFeeReceiver);
         feeReceiver = _newFeeReceiver;
     }
@@ -294,18 +295,26 @@ abstract contract TimeLockPenaltyERC20 is ERC20, ERC20Permit, ERC20Votes, Access
 
     /// @notice Withdraw multiple withdrawal requests.
     /// @param _ids The IDs of the withdrawal requests to withdraw.
+    /// @param _maxAcceptablePenalty The maximum penalty percentage to apply.
     /// @return totalAmountWithdrawn The total amount of assets withdrawn.
     /// @return totalSlashAmount The total amount of assets that were slashed.
-    function _withdrawMultiple(uint256[] calldata _ids)
+    function _withdrawMultiple(
+        uint256[] calldata _ids,
+        uint256 _maxAcceptablePenalty
+    )
         internal
         returns (uint256 totalAmountWithdrawn, uint256 totalSlashAmount)
     {
+        if (startPenaltyPercentage > _maxAcceptablePenalty) {
+            revert MaxPenaltyPercentageExceeded();
+        }
         uint256 i = 0;
         for (; i < _ids.length; ++i) {
             (uint256 amountWithdrawn, uint256 slashAmount) = _withdraw(_ids[i]);
             totalAmountWithdrawn += amountWithdrawn;
             totalSlashAmount += slashAmount;
         }
+        unlockingAmount = unlockingAmount - totalAmountWithdrawn - totalSlashAmount;
     }
 
     /// @notice Withdraw assets from the contract
@@ -382,5 +391,20 @@ abstract contract TimeLockPenaltyERC20 is ERC20, ERC20Permit, ERC20Votes, Access
     /// @return The nonce for the address.
     function nonces(address owner) public view virtual override(ERC20Permit, Nonces) returns (uint256) {
         return super.nonces(owner);
+    }
+
+    /// @notice Override clock() function to return block.timestamp
+    function clock() public view virtual override returns (uint48) {
+        return Time.timestamp(); // Return current timestamp
+    }
+
+    /// @notice Override CLOCK_MODE() function to return "mode=timestamp&from=default"
+    /// @dev This function is used to check that the clock was not modified
+    function CLOCK_MODE() public view virtual override returns (string memory) {
+        // Check that the clock was not modified
+        if (clock() != Time.timestamp()) {
+            revert ERC6372InconsistentClock();
+        }
+        return "mode=timestamp&from=default";
     }
 }

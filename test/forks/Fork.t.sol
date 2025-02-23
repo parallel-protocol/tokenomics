@@ -5,6 +5,9 @@ import "../Base.t.sol";
 
 /// @notice Common logic needed by all fork tests.
 abstract contract Fork_Test is Base_Test {
+    address bal;
+    address aura;
+
     function setUp() public virtual override {
         // Fork Polygon Mainnet at a specific block number.
         vm.createSelectFork({ blockNumber: 21_816_469, urlOrAlias: "mainnet" });
@@ -14,19 +17,26 @@ abstract contract Fork_Test is Base_Test {
 
         _setForkContracts();
 
+        address[] memory rewardTokens = new address[](2);
+        rewardTokens[0] = address(bal);
+        rewardTokens[1] = address(aura);
+
         sprl2 = _deploySPRL2(
             address(auraBpt),
             users.daoTreasury.addr,
             address(accessManager),
             DEFAULT_PENALTY_PERCENTAGE,
             DEFAULT_TIME_LOCK_DURATION,
-            balancerV3RouterMock,
-            auraBoosterLiteMock,
-            auraRewardPoolMock,
-            bpt,
-            prl,
-            weth,
-            permit2
+            sPRL2.BPTConfigParams({
+                balancerRouter: balancerV3RouterMock,
+                auraBoosterLite: auraBoosterLiteMock,
+                auraRewardsPool: auraRewardPoolMock,
+                balancerBPT: bpt,
+                prl: prl,
+                weth: weth,
+                rewardTokens: rewardTokens,
+                permit2: permit2
+            })
         );
     }
 
@@ -43,6 +53,10 @@ abstract contract Fork_Test is Base_Test {
         auraRewardPoolMock = AuraRewardPoolMock(0x473dA6619e3bf97f946C6Cc991952c010e25eC3E);
         vm.label({ account: address(auraRewardPoolMock), newLabel: "AuraRewardPoolMock" });
 
+        bal = 0xba100000625a3754423978a60c9317c58a424e3D;
+        vm.label({ account: address(bal), newLabel: "BAL" });
+        aura = 0xC0c293ce456fF0ED870ADd98a0828Dd4d2903DBF;
+        vm.label({ account: address(aura), newLabel: "Aura" });
         bpt = ERC20Mock(0x5512fdDC40842b257e2A7742Be3DaDcf31574d53);
         vm.label({ account: address(bpt), newLabel: "BPT" });
         prl = ERC20Mock(0x04C154b66CB340F3Ae24111CC767e0184Ed00Cc6);

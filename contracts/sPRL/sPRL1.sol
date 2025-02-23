@@ -88,9 +88,9 @@ contract sPRL1 is TimeLockPenaltyERC20 {
 
     /// @notice Withdraw multiple withdrawal requests.
     /// @param _ids The IDs of the withdrawal requests to withdraw.
-    function withdraw(uint256[] calldata _ids) external nonReentrant {
-        (uint256 totalAmountWithdrawn, uint256 totalFeeAmount) = _withdrawMultiple(_ids);
-        unlockingAmount = unlockingAmount - totalAmountWithdrawn - totalFeeAmount;
+    /// @param _maxAcceptablePenalty The maximum penalty percentage to apply.
+    function withdraw(uint256[] calldata _ids, uint256 _maxAcceptablePenalty) external nonReentrant {
+        (uint256 totalAmountWithdrawn, uint256 totalFeeAmount) = _withdrawMultiple(_ids, _maxAcceptablePenalty);
         if (totalFeeAmount > 0) {
             underlying.safeTransfer(feeReceiver, totalFeeAmount);
         }

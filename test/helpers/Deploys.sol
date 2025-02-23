@@ -22,12 +22,7 @@ import { RewardMerkleDistributor } from "contracts/rewardMerkleDistributor/Rewar
 import { IPermit2 } from "contracts/interfaces/IPermit2.sol";
 import { IBalancerV3Router } from "contracts/interfaces/IBalancerV3Router.sol";
 import { IWrappedNative } from "contracts/interfaces/IWrappedNative.sol";
-import {
-    IAuraBoosterLite,
-    IAuraRewardPool,
-    IVirtualBalanceRewardPool,
-    IAuraStashToken
-} from "contracts/interfaces/IAura.sol";
+import { IAuraBoosterLite, IAuraRewardPool } from "contracts/interfaces/IAura.sol";
 
 import { Permit2Mock } from "test/mocks/Permit2Mock.sol";
 import { TimeLockPenaltyERC20Mock } from "test/mocks/TimeLockPenaltyERC20Mock.sol";
@@ -35,12 +30,7 @@ import { ERC20Mock } from "test/mocks/ERC20Mock.sol";
 import { WrappedNativeMock } from "test/mocks/WrapperNativeMock.sol";
 
 import { BridgeableTokenMock } from "test/mocks/BridgeableTokenMock.sol";
-import {
-    AuraBoosterLiteMock,
-    AuraRewardPoolMock,
-    VirtualBalanceRewardPoolMock,
-    AuraStashTokenMock
-} from "test/mocks/AuraMock.sol";
+import { AuraBoosterLiteMock, AuraRewardPoolMock } from "test/mocks/AuraMock.sol";
 import { BalancerV3RouterMock } from "test/mocks/BalancerV3RouterMock.sol";
 
 import { SigUtils } from "./SigUtils.sol";
@@ -56,6 +46,7 @@ abstract contract Deploys is Test {
     ERC20Mock internal auraBpt;
     ERC20Mock internal extraRewardToken;
     ERC20Mock internal rewardToken;
+    address[] internal rewardTokens;
 
     Permit2Mock internal permit2;
 
@@ -67,8 +58,6 @@ abstract contract Deploys is Test {
 
     AuraBoosterLiteMock internal auraBoosterLiteMock;
     AuraRewardPoolMock internal auraRewardPoolMock;
-    VirtualBalanceRewardPoolMock internal virtualBalanceRewardPoolMock;
-    AuraStashTokenMock internal auraStashTokenMock;
 
     RewardMerkleDistributor internal rewardMerkleDistributor;
 
@@ -162,30 +151,13 @@ abstract contract Deploys is Test {
         address _accessManager,
         uint256 _startPenaltyPercentage,
         uint64 _timeLockDuration,
-        IBalancerV3Router _balancerRouter,
-        IAuraBoosterLite _auraBoosterLite,
-        IAuraRewardPool _auraVault,
-        IERC20 _balancerBPT,
-        IERC20 _prl,
-        IWrappedNative _weth,
-        Permit2Mock _permit2
+        sPRL2.BPTConfigParams memory _configParams
     )
         internal
         returns (sPRL2)
     {
         sPRL2 _sPRL2 = new sPRL2(
-            _auraBpt,
-            _feeReceiver,
-            _accessManager,
-            _startPenaltyPercentage,
-            _timeLockDuration,
-            _balancerRouter,
-            _auraBoosterLite,
-            _auraVault,
-            _balancerBPT,
-            _prl,
-            _weth,
-            _permit2
+            _auraBpt, _feeReceiver, _accessManager, _startPenaltyPercentage, _timeLockDuration, _configParams
         );
         vm.label({ account: address(_sPRL2), newLabel: "sPRL2" });
         return _sPRL2;
@@ -252,8 +224,6 @@ abstract contract Deploys is Test {
         address[2] memory _tokens,
         address _bpt,
         address _auraBpt,
-        address _rewardToken,
-        address _extraReward,
         address _permit2
     )
         internal
@@ -261,18 +231,10 @@ abstract contract Deploys is Test {
         balancerV3RouterMock = new BalancerV3RouterMock(_tokens, _bpt, _permit2);
         vm.label({ account: address(balancerV3RouterMock), newLabel: "BalancerV3RouterMock" });
 
-        auraStashTokenMock = new AuraStashTokenMock(_extraReward);
-        vm.label({ account: address(auraStashTokenMock), newLabel: "AuraStashTokenMock" });
-
-        virtualBalanceRewardPoolMock = new VirtualBalanceRewardPoolMock(address(auraStashTokenMock));
-        vm.label({ account: address(virtualBalanceRewardPoolMock), newLabel: "VirtualBalanceRewardPoolMock" });
-
         auraBoosterLiteMock = new AuraBoosterLiteMock(_bpt, _auraBpt);
         vm.label({ account: address(auraBoosterLiteMock), newLabel: "AuraBoosterLiteMock" });
 
-        address[] memory _extraRewards = new address[](1);
-        _extraRewards[0] = address(virtualBalanceRewardPoolMock);
-        auraRewardPoolMock = new AuraRewardPoolMock(_rewardToken, _extraRewards, address(auraBoosterLiteMock));
+        auraRewardPoolMock = new AuraRewardPoolMock(address(auraBoosterLiteMock));
         vm.label({ account: address(auraRewardPoolMock), newLabel: "AuraRewardPoolMock" });
     }
 }

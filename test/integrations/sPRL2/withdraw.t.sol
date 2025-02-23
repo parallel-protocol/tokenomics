@@ -35,7 +35,7 @@ contract SPRL2_Withdraw_Integrations_Test is Integrations_Test {
         uint256 aliceBalanceBefore = bpt.balanceOf(users.alice.addr);
         uint256[] memory requestIds = new uint256[](1);
         requestIds[0] = 0;
-        sprl2.withdrawBPT(requestIds);
+        sprl2.withdrawBPT(requestIds, DEFAULT_PENALTY_PERCENTAGE);
 
         uint256 aliceBalanceAfter = bpt.balanceOf(users.alice.addr);
         assertEq(aliceBalanceAfter - aliceBalanceBefore, WITHDRAW_AMOUNT);
@@ -50,7 +50,7 @@ contract SPRL2_Withdraw_Integrations_Test is Integrations_Test {
 
         uint256[] memory requestIds = new uint256[](1);
         requestIds[0] = 0;
-        sprl2.withdrawPRLAndWeth(requestIds, INITIAL_AMOUNT, INITIAL_AMOUNT);
+        sprl2.withdrawPRLAndWeth(requestIds, INITIAL_AMOUNT, INITIAL_AMOUNT, DEFAULT_PENALTY_PERCENTAGE);
 
         assertEq(prl.balanceOf(users.alice.addr), alicePrlBalanceBefore + INITIAL_AMOUNT);
         assertEq(weth.balanceOf(users.alice.addr), aliceWethBalanceBefore + INITIAL_AMOUNT);
@@ -73,7 +73,7 @@ contract SPRL2_Withdraw_Integrations_Test is Integrations_Test {
         requestIds[0] = 0;
         requestIds[1] = 1;
         requestIds[2] = 2;
-        sprl2.withdrawBPT(requestIds);
+        sprl2.withdrawBPT(requestIds, DEFAULT_PENALTY_PERCENTAGE);
 
         uint256 aliceBalanceAfter = bpt.balanceOf(users.alice.addr);
         assertEq(aliceBalanceAfter - aliceBalanceBefore, withdrawAmount);
@@ -90,7 +90,7 @@ contract SPRL2_Withdraw_Integrations_Test is Integrations_Test {
         requestIds[0] = 0;
         requestIds[1] = 1;
         requestIds[2] = 2;
-        sprl2.withdrawPRLAndWeth(requestIds, withdrawAmount, withdrawAmount);
+        sprl2.withdrawPRLAndWeth(requestIds, withdrawAmount, withdrawAmount, DEFAULT_PENALTY_PERCENTAGE);
 
         assertEq(prl.balanceOf(users.alice.addr), alicePrlBalanceBefore + withdrawAmount);
         assertEq(weth.balanceOf(users.alice.addr), aliceWethBalanceBefore + withdrawAmount);
@@ -112,13 +112,35 @@ contract SPRL2_Withdraw_Integrations_Test is Integrations_Test {
         requestIds[0] = 0;
         requestIds[1] = 1;
         requestIds[2] = 2;
-        sprl2.withdrawPRLAndWeth(requestIds, expectedAmountAliceReceived, expectedAmountAliceReceived);
+        sprl2.withdrawPRLAndWeth(
+            requestIds, expectedAmountAliceReceived, expectedAmountAliceReceived, DEFAULT_PENALTY_PERCENTAGE
+        );
 
         assertEq(bpt.balanceOf(address(users.daoTreasury.addr)), expectedAmountFeeReceiverReceived);
         assertEq(sprl2.balanceOf(users.alice.addr), INITIAL_AMOUNT - withdrawAmount);
         assertEq(prl.balanceOf(users.alice.addr), alicePrlBalanceBefore + expectedAmountAliceReceived);
         assertEq(weth.balanceOf(users.alice.addr), aliceWethBalanceBefore + expectedAmountAliceReceived);
         assertEq(users.alice.addr.balance, aliceEthBalanceBefore);
+    }
+
+    function test_SPRL2_WithdrawBPT_MultipleRequests_RevertWhen_PenaltyPercentageExceedMaxAcceptance()
+        external
+        requestMultiWithdraw
+    {
+        uint256[] memory requestIds = new uint256[](1);
+        requestIds[0] = 0;
+        vm.expectRevert(abi.encodeWithSelector(TimeLockPenaltyERC20.MaxPenaltyPercentageExceeded.selector));
+        sprl2.withdrawBPT(requestIds, DEFAULT_PENALTY_PERCENTAGE - 1);
+    }
+
+    function test_SPRL2_WithdrawPRLAndWeth_MultipleRequests_RevertWhen_PenaltyPercentageExceedMaxAcceptance()
+        external
+        requestMultiWithdraw
+    {
+        uint256[] memory requestIds = new uint256[](1);
+        requestIds[0] = 0;
+        vm.expectRevert(abi.encodeWithSelector(TimeLockPenaltyERC20.MaxPenaltyPercentageExceeded.selector));
+        sprl2.withdrawPRLAndWeth(requestIds, WITHDRAW_AMOUNT, WITHDRAW_AMOUNT, DEFAULT_PENALTY_PERCENTAGE - 1);
     }
 
     modifier PauseContract() {

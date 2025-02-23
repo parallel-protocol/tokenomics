@@ -17,6 +17,7 @@ contract MathsLib_Test is Test {
         assertEq(MathsLib.mulDivDown(x, y, denominator), (x * y) / denominator);
     }
 
+    /// forge-config: default.allow_internal_expect_revert = true
     function test_MathsLib_MulDivDown_RevertWhen_Overflow(uint256 x, uint256 y, uint256 denominator) external {
         denominator = bound(denominator, 1, type(uint256).max);
         // Overflow if
@@ -32,6 +33,7 @@ contract MathsLib_Test is Test {
         MathsLib.mulDivDown(x, y, denominator);
     }
 
+    /// forge-config: default.allow_internal_expect_revert = true
     function test_MathsLib_MulDivDown_RevertWhen_ZeroDenominator(uint256 x, uint256 y) external {
         vm.expectRevert();
         MathsLib.mulDivDown(x, y, 0);
@@ -45,6 +47,7 @@ contract MathsLib_Test is Test {
         assertEq(MathsLib.mulDivUp(x, y, denominator), x * y == 0 ? 0 : (x * y - 1) / denominator + 1);
     }
 
+    /// forge-config: default.allow_internal_expect_revert = true
     function test_MathsLib_MulDivUp_RevertWhen_Overflow(uint256 x, uint256 y, uint256 denominator) external {
         denominator = bound(denominator, 1, type(uint256).max);
         // Overflow if
@@ -61,6 +64,7 @@ contract MathsLib_Test is Test {
         MathsLib.mulDivUp(x, y, denominator);
     }
 
+    /// forge-config: default.allow_internal_expect_revert = true
     function test_MathsLib_MulDivUp_RevertWhen_Underverflow(uint256 x, uint256 y) external {
         vm.assume(x > 0 && y > 0);
 
@@ -68,6 +72,7 @@ contract MathsLib_Test is Test {
         MathsLib.mulDivUp(x, y, 0);
     }
 
+    /// forge-config: default.allow_internal_expect_revert = true
     function test_MathsLib_MulDivUp_RevertWhen_ZeroDenominator(uint256 x, uint256 y) external {
         vm.expectRevert();
         MathsLib.mulDivUp(x, y, 0);
