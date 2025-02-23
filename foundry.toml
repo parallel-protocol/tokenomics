@@ -4,7 +4,7 @@
   auto_detect_solc = false
   block_timestamp = 1_680_220_800 # March 31, 2023 at 00:00 GMT
   bytecode_hash = "none"
-  evm_version = "shanghai"
+  evm_version = "cancun"
   gas_reports = ["*"]
   optimizer = true
   optimizer_runs = 10_000
@@ -32,3 +32,6 @@
   quote_style = "double"
   tab_width = 4
   wrap_comments = true
+
+[rpc_endpoints]
+mainnet = "https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}"

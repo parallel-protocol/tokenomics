@@ -8,6 +8,8 @@ abstract contract Integrations_Test is Base_Test {
     function setUp() public virtual override {
         Base_Test.setUp();
 
+        permit2 = _deployPermit2Mock();
+
         mainFeeDistributor =
             _deployMainFeeDistributor(address(accessManager), address(bridgeableTokenMock), address(par));
 
@@ -31,7 +33,7 @@ abstract contract Integrations_Test is Base_Test {
             DEFAULT_TIME_LOCK_DURATION
         );
 
-        _deployBalancerAndAuraMock([address(weth), address(prl)], address(bpt), address(auraBpt));
+        _deployBalancerAndAuraMock([address(weth), address(prl)], address(bpt), address(auraBpt), address(permit2));
 
         sprl2 = _deploySPRL2(
             address(auraBpt),
@@ -39,13 +41,16 @@ abstract contract Integrations_Test is Base_Test {
             address(accessManager),
             DEFAULT_PENALTY_PERCENTAGE,
             DEFAULT_TIME_LOCK_DURATION,
-            balancerV3RouterMock,
-            auraBoosterLiteMock,
-            auraRewardPoolMock,
-            bpt,
-            prl,
-            weth,
-            rewardTokens
+            sPRL2.BPTConfigParams({
+                balancerRouter: balancerV3RouterMock,
+                auraBoosterLite: auraBoosterLiteMock,
+                auraRewardsPool: auraRewardPoolMock,
+                balancerBPT: bpt,
+                prl: prl,
+                weth: weth,
+                rewardTokens: rewardTokens,
+                permit2: permit2
+            })
         );
 
         rewardMerkleDistributor =

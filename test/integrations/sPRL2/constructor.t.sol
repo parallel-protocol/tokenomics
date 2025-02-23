@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-import "test/Base.t.sol";
+import "test/Integrations.t.sol";
 
-contract SPRL2_Constructor_Integrations_Test is Base_Test {
+contract SPRL2_Constructor_Integrations_Test is Integrations_Test {
     function test_SPRL2_Constructor() external {
         address[] memory rewardTokens = new address[](2);
         rewardTokens[0] = address(rewardToken);
@@ -21,7 +21,8 @@ contract SPRL2_Constructor_Integrations_Test is Base_Test {
                 balancerBPT: IERC20(address(bpt)),
                 prl: IERC20(address(prl)),
                 weth: IWrappedNative(address(weth)),
-                rewardTokens: rewardTokens
+                rewardTokens: rewardTokens,
+                permit2: IPermit2(address(permit2))
             })
         );
         assertEq(sprl2.authority(), address(accessManager));
@@ -38,11 +39,12 @@ contract SPRL2_Constructor_Integrations_Test is Base_Test {
         assertEq(address(sprl2.BPT()), address(bpt));
         assertEq(address(sprl2.PRL()), address(prl));
         assertEq(address(sprl2.WETH()), address(weth));
+        assertEq(address(sprl2.PERMIT2()), address(permit2));
         assertEq(sprl2.rewardTokens(0), address(rewardToken));
         assertEq(sprl2.rewardTokens(1), address(extraRewardToken));
     }
 
-    function test_SPRL2_Constructor_EmptyRewardTokens() external {
+    function test_SPRL2_Constructor_RevertWhen_EmptyRewardTokens() external {
         address[] memory wrongRewardTokens = new address[](0);
         vm.expectRevert(abi.encodeWithSelector(sPRL2.EmptyRewardTokens.selector));
         new sPRL2(
@@ -58,7 +60,8 @@ contract SPRL2_Constructor_Integrations_Test is Base_Test {
                 balancerBPT: IERC20(address(bpt)),
                 prl: IERC20(address(prl)),
                 weth: IWrappedNative(address(weth)),
-                rewardTokens: wrongRewardTokens
+                rewardTokens: wrongRewardTokens,
+                permit2: IPermit2(address(permit2))
             })
         );
     }
