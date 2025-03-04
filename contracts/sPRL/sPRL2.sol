@@ -407,10 +407,11 @@ contract sPRL2 is TimeLockPenaltyERC20 {
 
         BPT.approve(address(BALANCER_ROUTER), _bptAmount);
 
-        BALANCER_ROUTER.removeLiquidityProportional(address(BPT), _bptAmount, minAmountsOut, false, "");
+        (uint256[] memory amountsOut) =
+            BALANCER_ROUTER.removeLiquidityProportional(address(BPT), _bptAmount, minAmountsOut, false, "");
 
-        _prlAmount = PRL.balanceOf(address(this));
-        _wethAmount = WETH.balanceOf(address(this));
+        (_prlAmount, _wethAmount) =
+            isReversedBalancerPair ? (amountsOut[0], amountsOut[1]) : (amountsOut[1], amountsOut[0]);
     }
 
     /// @notice Exit the Aura Vault and unstake the BPT.
