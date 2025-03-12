@@ -18,14 +18,6 @@ export type ConfigData = {
     token: string;
     expiredRewardsRecipient: string;
   };
-  auctioneer: {
-    paymentToken: string;
-    initStartTime: number;
-    epochDuration: number;
-    initPrice: BigNumberish;
-    priceMultiplier: BigNumberish;
-    minInitPrice: BigNumberish;
-  };
   feeDistributor: {
     feeToken: string;
     mainChain: string;

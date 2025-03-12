@@ -4,7 +4,6 @@
 
 The Parallel Tokenomics system consists of smart contracts that enable:
 
-- Running Dutch auctions to collect a single fee token that is sent to the chain-specific fee distributor (Auctioneer)
 - Forwarding fees to the main fee distributor on the destination chain (SideChainFeeDistributor)
 - Distributing protocol-generated fees to registered fee receivers (MainFeeDistributor)
 - Staking PRL tokens to earn rewards through:
