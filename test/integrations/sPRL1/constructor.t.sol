@@ -16,7 +16,7 @@ contract SPRL1_Constructor_Integrations_Test is Base_Test {
         assertEq(address(sprl1.underlying()), address(prl));
         assertEq(sprl1.timeLockDuration(), DEFAULT_TIME_LOCK_DURATION);
         assertEq(sprl1.startPenaltyPercentage(), DEFAULT_PENALTY_PERCENTAGE);
-        assertEq(sprl1.unlockingAssets(), 0);
+        assertEq(sprl1.unlockingAmount(), 0);
         assertEq(sprl1.feeReceiver(), users.daoTreasury.addr);
         assertEq(sprl1.name(), "Stake PRL");
         assertEq(sprl1.symbol(), "sPRL1");

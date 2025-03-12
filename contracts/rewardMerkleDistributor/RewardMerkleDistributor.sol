@@ -41,6 +41,8 @@ contract RewardMerkleDistributor is AccessManaged, Pausable, ReentrancyGuard {
     address public expiredRewardsRecipient;
     /// @notice The total amount of tokens claimed.
     uint256 public totalClaimed;
+    /// @notice The last epoch id.
+    uint64 public lastEpochId = 1;
     /// @notice The merkle drops.
     mapping(uint64 epochId => MerkleDrop merkleDrop) public merkleDrops;
     /// @notice The rewards already claimed.
@@ -96,6 +98,12 @@ contract RewardMerkleDistributor is AccessManaged, Pausable, ReentrancyGuard {
     error EpochExpired();
     /// @notice Thrown when epoch didn't expired.
     error EpochNotExpired();
+    /// @notice Thrown when epoch is zero.
+    error EpochZeroNotAllowed();
+    /// @notice Thrown when epoch can't be updated.
+    error EpochCantBeUpdated();
+    /// @notice Thrown when epoch updated create a gap.
+    error EpochGapNotAllowed();
     /// @notice Thrown when claim windows didn't not start.
     error NotStarted();
     /// @notice Thrown when totalAmountClaimed for the epoch after a claim will exceed the total amount to distribute.
@@ -175,8 +183,23 @@ contract RewardMerkleDistributor is AccessManaged, Pausable, ReentrancyGuard {
 
     /// @notice Updates the merkleDrop for a specific epoch.
     /// @dev This function can only be called by AccessManager.
+    /// @dev only epoch that had not started yet can be updated or the next one.
+    /// @param _epoch The epoch number to update.
+    /// @param _merkleDrop The new merkle drop data.
     function updateMerkleDrop(uint64 _epoch, MerkleDrop memory _merkleDrop) external restricted {
+        if (_epoch == 0) revert EpochZeroNotAllowed();
         if (_merkleDrop.expiryTime - _merkleDrop.startTime < EPOCH_LENGTH) revert EpochExpired();
+        uint64 nextEpoch = lastEpochId + 1;
+        if (_epoch > nextEpoch || (_epoch == nextEpoch && merkleDrops[_epoch - 1].startTime == 0)) {
+            revert EpochGapNotAllowed();
+        }
+        uint64 epochStartTime = merkleDrops[_epoch].startTime;
+        if (epochStartTime != 0 && epochStartTime < uint64(block.timestamp)) {
+            revert EpochCantBeUpdated();
+        }
+        if (_epoch == nextEpoch) {
+            lastEpochId = _epoch;
+        }
         merkleDrops[_epoch] = _merkleDrop;
         emit MerkleDropUpdated(
             _epoch, _merkleDrop.root, _merkleDrop.totalAmount, _merkleDrop.startTime, _merkleDrop.expiryTime
@@ -227,8 +250,10 @@ contract RewardMerkleDistributor is AccessManaged, Pausable, ReentrancyGuard {
         if (currentTimetamp > _merkleDrop.expiryTime) revert EpochExpired();
         if (currentTimetamp < _merkleDrop.startTime) revert NotStarted();
         if (hasClaimed[_account][_epochId]) revert AlreadyClaimed();
-        bool isValidProof =
-            MerkleProof.verify(_proof, _merkleDrop.root, keccak256(abi.encodePacked(_epochId, _account, _amount)));
+        /// @dev Merkle leaves are double-hashed to avoid second preimage attack:
+        /// https://www.rareskills.io/post/merkle-tree-second-preimage-attack
+        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(_epochId, _account, _amount))));
+        bool isValidProof = MerkleProof.verify(_proof, _merkleDrop.root, leaf);
         if (!isValidProof) revert ProofInvalid();
         totalClaimed += _amount;
         totalClaimedPerEpoch[_epochId] += _amount;
@@ -242,7 +267,7 @@ contract RewardMerkleDistributor is AccessManaged, Pausable, ReentrancyGuard {
 
     function _getEpochExpiredRewards(uint64 _epochId) private view returns (uint256 epochExpiredRewards) {
         MerkleDrop memory _merkleDrop = merkleDrops[_epochId];
-        if (_merkleDrop.expiryTime > uint64(block.timestamp)) revert EpochNotExpired();
+        if (_merkleDrop.expiryTime >= uint64(block.timestamp)) revert EpochNotExpired();
         epochExpiredRewards = _merkleDrop.totalAmount - totalClaimedPerEpoch[_epochId];
     }
 }

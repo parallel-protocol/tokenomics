@@ -46,6 +46,16 @@ contract SideChainFeeCollector is FeeCollectorCore {
     event BridgeableTokenUpdated(address newBridgeableToken);
 
     //-------------------------------------------
+    // Errors
+    //-------------------------------------------
+
+    /// @notice Emitted when the bridgeable token mismatch.
+    error BridgeableTokenMismatch();
+
+    /// @notice Emitted when the destination receiver mismatch.
+    error DestinationReceiverMismatch();
+
+    //-------------------------------------------
     // Constructor
     //-------------------------------------------
 
@@ -70,13 +80,30 @@ contract SideChainFeeCollector is FeeCollectorCore {
     }
 
     //-------------------------------------------
-    // External functions
+    // AccessManaged functions
     //-------------------------------------------
 
     /// @notice Release the fee token to the MainFeeDistributor on the receiving chain.
     /// @param _options Options to be passed to the bridgeable token.
     /// @return amountSent The amount of fee token that has been bridged.
-    function release(bytes memory _options) external payable nonReentrant whenNotPaused returns (uint256 amountSent) {
+    function release(
+        bytes memory _options,
+        address _expectedBridgeableToken,
+        address _expectedDestinationReceiver
+    )
+        external
+        payable
+        nonReentrant
+        whenNotPaused
+        restricted
+        returns (uint256 amountSent)
+    {
+        if (_expectedBridgeableToken != address(bridgeableToken)) {
+            revert BridgeableTokenMismatch();
+        }
+        if (_expectedDestinationReceiver != destinationReceiver) {
+            revert DestinationReceiverMismatch();
+        }
         amountSent = _calcBridgeableAmount();
         if (amountSent == 0) {
             revert NothingToRelease();
@@ -95,10 +122,6 @@ contract SideChainFeeCollector is FeeCollectorCore {
         emit FeeReleased(msg.sender, amountSent);
         bridgeableToken.send{ value: msg.value }(sendParam, MessagingFee(msg.value, 0), payable(msg.sender));
     }
-
-    //-------------------------------------------
-    // AccessManaged functions
-    //-------------------------------------------
 
     /// @notice Update the destination receiver address.
     /// @param _newDestinationReceiver The new destination receiver address.

@@ -24,12 +24,12 @@ contract BridgeableTokenMock is ERC20Mock, IBridgeableToken {
         principalToken = ERC20Mock(_principalToken);
     }
 
-    function swapLzTokenToPrincipalToken(uint256 _amount) external {
+    function swapLzTokenToPrincipalToken(address _to, uint256 _amount) external {
         _burn(msg.sender, _amount);
-        principalToken.mint(msg.sender, _amount);
+        principalToken.mint(_to, _amount);
     }
 
-    function getMaxMintableAmount() external view returns (uint256) {
+    function getMaxCreditableAmount() external view returns (uint256) {
         return maxMintableAmount;
     }
 

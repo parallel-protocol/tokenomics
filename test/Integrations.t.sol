@@ -8,22 +8,13 @@ abstract contract Integrations_Test is Base_Test {
     function setUp() public virtual override {
         Base_Test.setUp();
 
+        permit2 = _deployPermit2Mock();
+
         mainFeeDistributor =
             _deployMainFeeDistributor(address(accessManager), address(bridgeableTokenMock), address(par));
 
         sideChainFeeCollector = _deploySideChainFeeCollector(
             address(accessManager), mainEid, address(bridgeableTokenMock), address(mainFeeDistributor), address(par)
-        );
-
-        auctioneer = _deployAuctioneer(
-            address(accessManager),
-            address(par),
-            address(sideChainFeeCollector),
-            block.timestamp,
-            EPOCH_DURATION,
-            INIT_PRICE,
-            PRICE_MULTIPLIER,
-            MIN_INIT_PRICE
         );
 
         timeLockPenaltyERC20 = _deployTimeLockPenaltyERC20(
@@ -42,13 +33,7 @@ abstract contract Integrations_Test is Base_Test {
             DEFAULT_TIME_LOCK_DURATION
         );
 
-        _deployBalancerAndAuraMock(
-            [address(weth), address(prl)],
-            address(bpt),
-            address(auraBpt),
-            address(rewardToken),
-            address(extraRewardToken)
-        );
+        _deployBalancerAndAuraMock([address(weth), address(prl)], address(bpt), address(auraBpt), address(permit2));
 
         sprl2 = _deploySPRL2(
             address(auraBpt),
@@ -56,13 +41,18 @@ abstract contract Integrations_Test is Base_Test {
             address(accessManager),
             DEFAULT_PENALTY_PERCENTAGE,
             DEFAULT_TIME_LOCK_DURATION,
-            balancerVaultMock,
-            auraBoosterLiteMock,
-            auraRewardPoolMock,
-            bpt,
-            prl,
-            weth
+            sPRL2.BPTConfigParams({
+                balancerRouter: balancerV3RouterMock,
+                auraBoosterLite: auraBoosterLiteMock,
+                auraRewardsPool: auraRewardPoolMock,
+                balancerBPT: bpt,
+                prl: prl,
+                weth: weth,
+                rewardTokens: rewardTokens,
+                permit2: permit2
+            })
         );
+
         rewardMerkleDistributor =
             _deployRewardMerkleDistributor(address(accessManager), address(par), users.daoTreasury.addr);
     }

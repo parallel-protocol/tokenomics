@@ -10,7 +10,6 @@ import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { IERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import { Auctioneer } from "contracts/fees/Auctioneer.sol";
 import { MainFeeDistributor } from "contracts/fees/MainFeeDistributor.sol";
 import { SideChainFeeCollector } from "contracts/fees/SideChainFeeCollector.sol";
 import { FeeCollectorCore } from "contracts/fees/FeeCollectorCore.sol";
@@ -20,28 +19,19 @@ import { sPRL2 } from "contracts/sPRL/sPRL2.sol";
 
 import { RewardMerkleDistributor } from "contracts/rewardMerkleDistributor/RewardMerkleDistributor.sol";
 
-import { TimeLockPenaltyERC20 } from "contracts/sPRL/TimeLockPenaltyERC20.sol";
-
-import { IBalancerVault } from "contracts/interfaces/IBalancerV3Vault.sol";
+import { IPermit2 } from "contracts/interfaces/IPermit2.sol";
+import { IBalancerV3Router } from "contracts/interfaces/IBalancerV3Router.sol";
 import { IWrappedNative } from "contracts/interfaces/IWrappedNative.sol";
-import {
-    IAuraBoosterLite,
-    IAuraRewardPool,
-    IVirtualBalanceRewardPool,
-    IAuraStashToken
-} from "contracts/interfaces/IAura.sol";
+import { IAuraBoosterLite, IAuraRewardPool } from "contracts/interfaces/IAura.sol";
 
+import { Permit2Mock } from "test/mocks/Permit2Mock.sol";
+import { TimeLockPenaltyERC20Mock } from "test/mocks/TimeLockPenaltyERC20Mock.sol";
 import { ERC20Mock } from "test/mocks/ERC20Mock.sol";
 import { WrappedNativeMock } from "test/mocks/WrapperNativeMock.sol";
-import { ReenteringMockToken } from "test/mocks/ReenteringMockToken.sol";
+
 import { BridgeableTokenMock } from "test/mocks/BridgeableTokenMock.sol";
-import {
-    AuraBoosterLiteMock,
-    AuraRewardPoolMock,
-    VirtualBalanceRewardPoolMock,
-    AuraStashTokenMock
-} from "test/mocks/AuraMock.sol";
-import { BalancerVaultMock } from "test/mocks/BalancerVaultMock.sol";
+import { AuraBoosterLiteMock, AuraRewardPoolMock } from "test/mocks/AuraMock.sol";
+import { BalancerV3RouterMock } from "test/mocks/BalancerV3RouterMock.sol";
 
 import { SigUtils } from "./SigUtils.sol";
 
@@ -56,19 +46,18 @@ abstract contract Deploys is Test {
     ERC20Mock internal auraBpt;
     ERC20Mock internal extraRewardToken;
     ERC20Mock internal rewardToken;
+    address[] internal rewardTokens;
+
+    Permit2Mock internal permit2;
 
     WrappedNativeMock internal weth;
 
     BridgeableTokenMock internal bridgeableTokenMock;
-    ReenteringMockToken internal reenterToken;
-    BalancerVaultMock internal balancerVaultMock;
+
+    BalancerV3RouterMock internal balancerV3RouterMock;
 
     AuraBoosterLiteMock internal auraBoosterLiteMock;
     AuraRewardPoolMock internal auraRewardPoolMock;
-    VirtualBalanceRewardPoolMock internal virtualBalanceRewardPoolMock;
-    AuraStashTokenMock internal auraStashTokenMock;
-
-    Auctioneer internal auctioneer;
 
     RewardMerkleDistributor internal rewardMerkleDistributor;
 
@@ -78,7 +67,7 @@ abstract contract Deploys is Test {
 
     sPRL2 internal sprl2;
     sPRL1 internal sprl1;
-    TimeLockPenaltyERC20 internal timeLockPenaltyERC20;
+    TimeLockPenaltyERC20Mock internal timeLockPenaltyERC20;
 
     function _deployAccessManager(address _initialAdmin) internal returns (AccessManager) {
         AccessManager _accessManager = new AccessManager(_initialAdmin);
@@ -106,6 +95,12 @@ abstract contract Deploys is Test {
         return _erc20;
     }
 
+    function _deployPermit2Mock() internal returns (Permit2Mock) {
+        Permit2Mock _permit2Mock = new Permit2Mock();
+        vm.label({ account: address(_permit2Mock), newLabel: "Permit2Mock" });
+        return _permit2Mock;
+    }
+
     function _deployWrappedNativeMock() internal returns (WrappedNativeMock) {
         WrappedNativeMock _wrappedNative = new WrappedNativeMock("Wrapped Native", "WNative", 18);
         vm.label({ account: address(_wrappedNative), newLabel: "WNative" });
@@ -120,9 +115,9 @@ abstract contract Deploys is Test {
         uint64 _timeLockDuration
     )
         internal
-        returns (TimeLockPenaltyERC20)
+        returns (TimeLockPenaltyERC20Mock)
     {
-        TimeLockPenaltyERC20 _timeLockPenaltyERC20 = new TimeLockPenaltyERC20(
+        TimeLockPenaltyERC20Mock _timeLockPenaltyERC20 = new TimeLockPenaltyERC20Mock(
             "TimeLockPenaltyERC20",
             "TLPERC20",
             _underlying,
@@ -156,28 +151,13 @@ abstract contract Deploys is Test {
         address _accessManager,
         uint256 _startPenaltyPercentage,
         uint64 _timeLockDuration,
-        IBalancerVault _balancerVault,
-        IAuraBoosterLite _auraBoosterLite,
-        IAuraRewardPool _auraVault,
-        IERC20 _balancerBPT,
-        IERC20 _prl,
-        IWrappedNative _weth
+        sPRL2.BPTConfigParams memory _configParams
     )
         internal
         returns (sPRL2)
     {
         sPRL2 _sPRL2 = new sPRL2(
-            _auraBpt,
-            _feeReceiver,
-            _accessManager,
-            _startPenaltyPercentage,
-            _timeLockDuration,
-            _balancerVault,
-            _auraBoosterLite,
-            _auraVault,
-            _balancerBPT,
-            _prl,
-            _weth
+            _auraBpt, _feeReceiver, _accessManager, _startPenaltyPercentage, _timeLockDuration, _configParams
         );
         vm.label({ account: address(_sPRL2), newLabel: "sPRL2" });
         return _sPRL2;
@@ -208,33 +188,6 @@ abstract contract Deploys is Test {
         ERC20Mock _erc20 = new ERC20Mock(_name, _symbol, _decimals);
         vm.label({ account: address(_erc20), newLabel: _name });
         return _erc20;
-    }
-
-    function _deployAuctioneer(
-        address _accessManager,
-        address _paymentToken,
-        address _paymentReceiver,
-        uint256 _initStartTime,
-        uint256 _epochPeriod,
-        uint256 _initPrice,
-        uint256 _priceMultiplier,
-        uint256 _minInitPrice
-    )
-        internal
-        returns (Auctioneer)
-    {
-        Auctioneer _auctioneer = new Auctioneer(
-            _accessManager,
-            _paymentToken,
-            _paymentReceiver,
-            _initStartTime,
-            _epochPeriod,
-            _initPrice,
-            _priceMultiplier,
-            _minInitPrice
-        );
-        vm.label({ account: address(_auctioneer), newLabel: "Auctioneer" });
-        return _auctioneer;
     }
 
     function _deployMainFeeDistributor(
@@ -271,26 +224,17 @@ abstract contract Deploys is Test {
         address[2] memory _tokens,
         address _bpt,
         address _auraBpt,
-        address _rewardToken,
-        address _extraReward
+        address _permit2
     )
         internal
     {
-        balancerVaultMock = new BalancerVaultMock(_tokens, _bpt);
-        vm.label({ account: address(balancerVaultMock), newLabel: "BalancerVaultMock" });
-
-        auraStashTokenMock = new AuraStashTokenMock(_extraReward);
-        vm.label({ account: address(auraStashTokenMock), newLabel: "AuraStashTokenMock" });
-
-        virtualBalanceRewardPoolMock = new VirtualBalanceRewardPoolMock(address(auraStashTokenMock));
-        vm.label({ account: address(virtualBalanceRewardPoolMock), newLabel: "VirtualBalanceRewardPoolMock" });
-
-        address[] memory _extraRewards = new address[](1);
-        _extraRewards[0] = address(virtualBalanceRewardPoolMock);
-        auraRewardPoolMock = new AuraRewardPoolMock(_rewardToken, _extraRewards);
-        vm.label({ account: address(auraRewardPoolMock), newLabel: "AuraRewardPoolMock" });
+        balancerV3RouterMock = new BalancerV3RouterMock(_tokens, _bpt, _permit2);
+        vm.label({ account: address(balancerV3RouterMock), newLabel: "BalancerV3RouterMock" });
 
         auraBoosterLiteMock = new AuraBoosterLiteMock(_bpt, _auraBpt);
         vm.label({ account: address(auraBoosterLiteMock), newLabel: "AuraBoosterLiteMock" });
+
+        auraRewardPoolMock = new AuraRewardPoolMock(address(auraBoosterLiteMock));
+        vm.label({ account: address(auraRewardPoolMock), newLabel: "AuraRewardPoolMock" });
     }
 }

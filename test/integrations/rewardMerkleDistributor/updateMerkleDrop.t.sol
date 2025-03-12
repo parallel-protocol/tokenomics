@@ -6,9 +6,11 @@ import "test/Integrations.t.sol";
 contract RewardMerkleDistributor_UpdateMerkleDrop_Integrations_Test is Integrations_Test {
     uint64 epochId = 1;
     RewardMerkleDistributor.MerkleDrop merkleDrop;
+    uint256 totalRewards = INITIAL_BALANCE * 2;
 
     function setUp() public override {
         super.setUp();
+        par.mint(address(rewardMerkleDistributor), totalRewards);
         merkleDrop = RewardMerkleDistributor.MerkleDrop({
             root: keccak256("root"),
             totalAmount: INITIAL_BALANCE,
@@ -44,5 +46,26 @@ contract RewardMerkleDistributor_UpdateMerkleDrop_Integrations_Test is Integrati
         merkleDrop.expiryTime = merkleDrop.expiryTime - 1;
         vm.expectRevert(abi.encodeWithSelector(RewardMerkleDistributor.EpochExpired.selector));
         rewardMerkleDistributor.updateMerkleDrop(epochId, merkleDrop);
+    }
+
+    function test_RewardMerkleDistributor_UpdateMerkleDrop_RevertWhen_UpdateEpochAlreadyStarted() external {
+        vm.startPrank(users.admin.addr);
+        rewardMerkleDistributor.updateMerkleDrop(epochId, merkleDrop);
+
+        skip(merkleDrop.startTime);
+        vm.expectRevert(abi.encodeWithSelector(RewardMerkleDistributor.EpochCantBeUpdated.selector));
+        rewardMerkleDistributor.updateMerkleDrop(epochId, merkleDrop);
+    }
+
+    function test_RewardMerkleDistributor_UpdateMerkleDrop_RevertWhen_UpdateEpochCreatesGap() external {
+        vm.startPrank(users.admin.addr);
+        vm.expectRevert(abi.encodeWithSelector(RewardMerkleDistributor.EpochGapNotAllowed.selector));
+        rewardMerkleDistributor.updateMerkleDrop(epochId + 1, merkleDrop);
+    }
+
+    function test_RewardMerkleDistributor_UpdateMerkleDrop_RevertWhen_UpdateEpochZero() external {
+        vm.startPrank(users.admin.addr);
+        vm.expectRevert(abi.encodeWithSelector(RewardMerkleDistributor.EpochZeroNotAllowed.selector));
+        rewardMerkleDistributor.updateMerkleDrop(0, merkleDrop);
     }
 }

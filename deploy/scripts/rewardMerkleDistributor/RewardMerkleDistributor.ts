@@ -1,15 +1,8 @@
 import assert from "assert";
 
-import { ethers } from "ethers";
 import { type DeployFunction } from "hardhat-deploy/types";
 
-import {
-  checkAddressValid,
-  GAS,
-  getTokenAddressFromConfig,
-  getWalletAddressFromConfig,
-  isAddressValid,
-} from "../../utils";
+import { checkAddressValid, GAS, getTokenAddressFromConfig, getWalletAddressFromConfig } from "../../utils";
 import { readFileSync } from "fs";
 import { ConfigData } from "../../utils/types";
 

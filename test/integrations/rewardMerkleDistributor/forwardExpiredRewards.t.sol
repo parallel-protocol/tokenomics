@@ -12,13 +12,13 @@ contract RewardMerkleDistributor_ForwardExpiredRewards_Integrations_Test is Inte
     uint256 internal secondRewardsAmount = 2e18;
     uint256 internal totalSecondRewardsAmount = secondRewardsAmount * 2;
 
-    uint64 firstEpochId = 0;
+    uint64 firstEpochId = 1;
     RewardMerkleDistributor.MerkleDrop firstEpochMerkleDrop;
     Merkle internal firstEpochMerkleTree;
     bytes32[] internal firstEpochLeaves;
     bytes32 internal firstEpochRoot;
 
-    uint64 secondEpochId = 1;
+    uint64 secondEpochId = 2;
     RewardMerkleDistributor.MerkleDrop secondEpochMerkleDrop;
     Merkle internal secondEpochMerkleTree;
     bytes32[] internal secondEpochLeaves;
@@ -35,8 +35,12 @@ contract RewardMerkleDistributor_ForwardExpiredRewards_Integrations_Test is Inte
         vm.startPrank(users.admin.addr);
         /// @dev Leaves are added in the order of the merkle tree's firstEpochLeaves.
         /// @dev alice reward is at index 0, bob reward is at index 1.
-        firstEpochLeaves.push(keccak256(abi.encodePacked(firstEpochId, users.alice.addr, firstRewardsAmount)));
-        firstEpochLeaves.push(keccak256(abi.encodePacked(firstEpochId, users.bob.addr, firstRewardsAmount)));
+        firstEpochLeaves.push(
+            keccak256(bytes.concat(keccak256(abi.encode(firstEpochId, users.alice.addr, firstRewardsAmount))))
+        );
+        firstEpochLeaves.push(
+            keccak256(bytes.concat(keccak256(abi.encode(firstEpochId, users.bob.addr, firstRewardsAmount))))
+        );
         firstEpochRoot = firstEpochMerkleTree.getRoot(firstEpochLeaves);
 
         firstEpochMerkleDrop = RewardMerkleDistributor.MerkleDrop({
@@ -49,8 +53,12 @@ contract RewardMerkleDistributor_ForwardExpiredRewards_Integrations_Test is Inte
 
         /// @dev Leaves are added in the order of the merkle tree's secondEpochLeaves.
         /// @dev alice reward is at index 0, bob reward is at index 1.
-        secondEpochLeaves.push(keccak256(abi.encodePacked(secondEpochId, users.alice.addr, secondRewardsAmount)));
-        secondEpochLeaves.push(keccak256(abi.encodePacked(secondEpochId, users.bob.addr, secondRewardsAmount)));
+        secondEpochLeaves.push(
+            keccak256(bytes.concat(keccak256(abi.encode(secondEpochId, users.alice.addr, secondRewardsAmount))))
+        );
+        secondEpochLeaves.push(
+            keccak256(bytes.concat(keccak256(abi.encode(secondEpochId, users.bob.addr, secondRewardsAmount))))
+        );
         secondEpochRoot = secondEpochMerkleTree.getRoot(secondEpochLeaves);
         secondEpochMerkleDrop = RewardMerkleDistributor.MerkleDrop({
             root: secondEpochRoot,

@@ -3,6 +3,7 @@ pragma solidity 0.8.25;
 
 import { console2 } from "@forge-std/console2.sol";
 import { Test, Vm } from "@forge-std/Test.sol";
+import { StdCheats } from "@forge-std/StdCheats.sol";
 
 import "./helpers/Deploys.sol";
 import "./helpers/Defaults.sol";
@@ -18,8 +19,6 @@ abstract contract Base_Test is Test, Deploys, Assertions, Defaults, Utils {
     function setUp() public virtual {
         // Roll the blockchain forward to Monday 1 January 2024 12:00:00 GMT.
         skip(1_704_110_400);
-
-        reenterToken = new ReenteringMockToken("ReenteringToken", "RET");
 
         // Deploy PAR token contract.
         par = _deployERC20Mock("PAR", "PAR", 18);
@@ -37,6 +36,9 @@ abstract contract Base_Test is Test, Deploys, Assertions, Defaults, Utils {
         rewardToken = _deployERC20Mock("rewardToken", "rewardToken", 18);
         // Deploy extra reward token contract.
         extraRewardToken = _deployERC20Mock("extraRewardToken", "extraRewardToken", 18);
+        // Add reward tokens to the array.
+        rewardTokens.push(address(rewardToken));
+        rewardTokens.push(address(extraRewardToken));
 
         // Deploy bridgeable token mock contract.
         bridgeableTokenMock = _deployBridgeableTokenMock(address(par));
