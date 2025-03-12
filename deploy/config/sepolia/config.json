@@ -14,14 +14,6 @@
     "token": "par",
     "expiredRewardsRecipient": "dao"
   },
-  "auctioneer": {
-    "paymentToken": "par",
-    "initStartTime": 1736326800,
-    "epochDuration": 2419200,
-    "initPrice": "60000000000000000000000",
-    "priceMultiplier": "3000000000000000000",
-    "minInitPrice": "10000000000000000000000"
-  },
   "feeDistributor": {
     "mainChain": "sepolia",
     "destinationReceiver": "0x0000000000000000000000000000000000000000",
