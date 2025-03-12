@@ -4,31 +4,29 @@
   auto_detect_solc = false
   block_timestamp = 1_680_220_800 # March 31, 2023 at 00:00 GMT
   bytecode_hash = "none"
-  evm_version = "shanghai"
-  fuzz = { runs = 1_000 }
+  evm_version = "cancun"
   gas_reports = ["*"]
   optimizer = true
   optimizer_runs = 10_000
   out = "out"
+  cache_path = 'cache'
   script = "script"
-  solc = "0.8.24"
+  solc = "0.8.25"
   src = "contracts"
   test = "test"
 
 [profile.ci]
-  fuzz = { runs = 10_000 }
+  fuzz = { runs = 1_000 }
   verbosity = 4
 
-[etherscan]
-  mainnet = { key = "${API_KEY_ETHERSCAN}" }
-  polygon = { key = "${API_KEY_POLYGONSCAN}" }
-  polygon_amoy = { key = "${API_KEY_POLYGONSCAN}" }
-  sepolia = { key = "${API_KEY_ETHERSCAN}" }
+[invariant]
+  runs = 256
+  depth = 256
 
 [fmt]
   bracket_spacing = true
   int_types = "long"
-  line_length = 120
+  line_length = 119
   multiline_func_header = "all"
   number_underscore = "thousands"
   quote_style = "double"
@@ -36,7 +34,4 @@
   wrap_comments = true
 
 [rpc_endpoints]
-  mainnet = "https://eth-mainnet.g.alchemy.com/v2/${API_KEY_ALCHEMY}"
-  polygon = "https://polygon-mainnet.g.alchemy.io/v2/${API_KEY_ALCHEMY}"
-  polygon_amoy = "https://polygon-amoy.g.alchemy.io/v2/${API_KEY_ALCHEMY}"
-  sepolia = "https://eth-sepolia.g.alchemy.io/v2/${API_KEY_ALCHEMY}"
+mainnet = "https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}"

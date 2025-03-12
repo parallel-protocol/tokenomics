@@ -1,7 +1,6 @@
 import "dotenv/config";
 
 import "hardhat-deploy";
-import "@nomicfoundation/hardhat-toolbox-viem";
 
 import { HardhatUserConfig, HttpNetworkAccountsUserConfig } from "hardhat/types";
 
@@ -29,11 +28,11 @@ const config: HardhatUserConfig = {
   solidity: {
     compilers: [
       {
-        version: "0.8.24",
+        version: "0.8.25",
         settings: {
           optimizer: {
             enabled: true,
-            runs: 1000,
+            runs: 10_000,
           },
         },
       },
@@ -41,19 +40,24 @@ const config: HardhatUserConfig = {
   },
   networks: {
     mainnet: {
-      url: getRpcURL("mainnet"),
       accounts,
+      url: getRpcURL("mainnet"),
       verify: getVerifyConfig("mainnet"),
     },
     sepolia: {
-      url: getRpcURL("sepolia"),
       accounts,
+      url: getRpcURL("sepolia"),
       verify: getVerifyConfig("sepolia"),
     },
-    polygon_amoy: {
-      url: getRpcURL("polygon_amoy"),
+    arbiSepolia: {
       accounts,
-      verify: getVerifyConfig("polygon_amoy"),
+      url: getRpcURL("arbiSepolia"),
+      verify: getVerifyConfig("arbiSepolia"),
+    },
+    polygon: {
+      accounts,
+      url: getRpcURL("polygon"),
+      verify: getVerifyConfig("polygon"),
     },
   },
   namedAccounts: {
